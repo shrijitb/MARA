@@ -1,0 +1,33 @@
+trading:
+  tradingStrategy: CONSERVATIVE
+  entrySpread: 0.0080            # 0.8% spread to enter
+  exitSpread: -0.0050            # exit when spread closes to -0.5%
+  tradeTimeout: 3600
+  fixedExposure: 100             # USD per trade pair
+  homeCurrency: USDT
+
+notifications:
+  logs:
+    slack:                       # optional — leave blank to disable
+
+exchanges:
+  - exchangeClass: org.knowm.xchange.binance.BinanceExchange
+    apiKey: ${BINANCE_API_KEY}
+    secretKey: ${BINANCE_SECRET}
+    tradingPairs:
+      - BTC/USDT
+      - ETH/USDT
+      - SOL/USDT
+    margin: true
+    fee: 0.001
+    homeCurrency: USDT
+
+  - exchangeClass: org.knowm.xchange.bybit.BybitExchange
+    apiKey: ${BYBIT_API_KEY}
+    secretKey: ${BYBIT_SECRET}
+    tradingPairs:
+      - BTC/USDT
+      - ETH/USDT
+    margin: true
+    fee: 0.001
+    homeCurrency: USDT

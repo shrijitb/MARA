@@ -1,0 +1,150 @@
+services:
+  # NOTE: No `platform:` flags here.
+  #
+  # RUN ARM64 containers via QEMU on your amd64 host. This works for custom
+  # Python images we build (QEMU handles them) but kills pre-built native
+  # binaries like ollama/ollama ("exec format error").
+  #
+  # ARM64 targeting for Pi deploy lives in docker-compose.pi.yml (override).
+  # To deploy to Pi: docker compose -f docker-compose.yml -f docker-compose.pi.yml ...
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: mara-ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    environment:
+      OLLAMA_KEEP_ALIVE: 24h
+    restart: unless-stopped
+    healthcheck:
+      # /api/version always returns 200 regardless of whether models are loaded.
+      # /api/tags can return empty body which some curl builds reject with -f.
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/version > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+  hypervisor:
+    # Build context is project root so data/ and config/ are reachable.
+    # hypervisor/main.py imports from data.feeds.market_data at runtime —
+    # that module lives outside ./hypervisor so ./hypervisor alone is wrong.
+    build:
+      context: .
+      dockerfile: hypervisor/Dockerfile
+    container_name: mara-hypervisor
+    depends_on:
+      ollama:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config:/app/config:ro
+      - ./data/db:/app/data/db
+    env_file: .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  worker-nautilus:
+    build: ./workers/nautilus
+    container_name: mara-nautilus
+    depends_on:
+      hypervisor:
+        condition: service_healthy
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./config:/app/config:ro
+      - ./data:/app/data
+    env_file: .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  worker-polymarket:
+    build: ./workers/polymarket
+    container_name: mara-polymarket
+    depends_on:
+      hypervisor:
+        condition: service_healthy
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./config:/app/config:ro
+    env_file: .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  worker-autohedge:
+    build: ./workers/autohedge
+    container_name: mara-autohedge
+    depends_on:
+      # service_started not service_healthy — autohedge handles Ollama
+      # connection failure gracefully (stub mode, advisory_only=True).
+      ollama:
+        condition: service_started
+    ports:
+      - "8003:8003"
+    env_file: .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  worker-arbitrader:
+    build: ./workers/arbitrader
+    container_name: mara-arbitrader
+    depends_on:
+      hypervisor:
+        condition: service_healthy
+    ports:
+      - "8004:8004"
+    volumes:
+      - arbitrader_logs:/app/logs
+    environment:
+      JAVA_OPTS: "-Xmx400m -Xms128m"
+    env_file: .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  worker-stocksharp:
+    build: ./workers/stocksharp/src
+    container_name: mara-stocksharp
+    profiles:
+      - paper
+      - live
+    depends_on:
+      hypervisor:
+        condition: service_healthy
+    ports:
+      - "8005:8005"
+    env_file: .env
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+  arbitrader_logs:

@@ -1,0 +1,53 @@
+system:
+  mode: backtest
+  heartbeat_sec: 30
+  signal_ttl_sec: 300
+  max_drawdown_pct: 0.15        # halt all trading at 15% portfolio drawdown
+  max_single_position_pct: 0.10
+  kelly_fraction: 0.25           # quarter-Kelly conservative sizing
+
+data:
+  tickers:
+    bdi: "^BDI"
+    vix: "^VIX"
+    dxy: "DX-Y.NYB"
+    yield_curve_fred: "T10Y2Y"
+    gold: "GC=F"
+    oil: "CL=F"
+    silver: "SI=F"
+    copper: "HG=F"
+    natgas: "NG=F"
+  etfs:
+    core: [VOO, VT, BND]
+    commodities: [GLDM, BWET, SLVR, SILJ, GOEX]
+    defense: [NATO, SHLD, PPA, ITA]
+    resources: [REMX]
+  crypto:
+    funding_symbols: [BTCUSDT, ETHUSDT, SOLUSDT]
+    ohlcv_pairs: ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
+
+workers:
+  arbitrader:
+    enabled: true
+    port: 8004
+    base_allocation: 0.10
+    sidecar_log_path: /app/logs/arbitrader.log
+  polymarket:
+    enabled: true
+    port: 8002
+    base_allocation: 0.05
+    poll_interval_sec: 300
+    signal_only: true             # no auto-execution until Phase 3
+  nautilus:
+    enabled: true
+    port: 8001
+    base_allocation: 0.50
+  autohedge:
+    enabled: true
+    port: 8003
+    base_allocation: 0.05
+    advisory_only: true           # never directly triggers orders
+  stocksharp:
+    enabled: false                # Phase 2+
+    port: 8005
+    base_allocation: 0.30

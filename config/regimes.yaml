@@ -1,0 +1,36 @@
+# config/regimes.yaml
+# Regime classification thresholds — edit here, no code changes needed.
+# Classifier loads these at startup. Restart hypervisor to apply changes.
+
+thresholds:
+  # WAR_PREMIUM — needs 2 of 4 signals to fire
+  war_defense_momentum:  0.08   # 8% avg 20d momentum across NATO/SHLD/PPA/ITA
+  war_premium_threshold: 25.0   # conflict index composite score — 28 = current Middle East, ~1 = peacetime
+  war_gold_oil_ratio:    45.0   # recalibrated from 25 — gold baseline is higher post-2024
+  war_bdi_slope:         0.05   # shipping demand spiking (supply chain stress)
+
+  # CRISIS_ACUTE — needs 2 of 4 signals
+  crisis_vix:           40.0   # VIX explosion = market panic
+  crisis_yield_curve:  -0.50   # deeply inverted = hard landing priced in
+  crisis_bdi_slope:    -0.10   # shipping demand collapsing
+  crisis_gold_oil_ratio: 25.0  # gold/oil high = safe haven demand
+
+  # BEAR_RECESSION — needs 2 of 4 signals
+  bear_yield_curve:     0.0    # any inversion
+  bear_bdi_slope:       0.0    # any negative slope
+  bear_funding_rate:   -0.0001 # negative funding = fear in crypto
+  bear_vix:            25.0    # elevated but not crisis-level fear
+
+  # BULL_FROTHY — needs 2 of 4 signals
+  frothy_vix:          15.0    # complacency
+  frothy_funding_rate:  0.0003 # crowded longs in crypto = euphoria
+  frothy_dxy:          100.0   # weak USD = risk-on globally
+  frothy_bdi_slope:     0.03   # mild shipping growth = real economy ok
+
+  # REGIME_CHANGE — single compound condition
+  change_bdi_slope_abs: 0.15   # BDI moving hard in either direction
+  change_vix:          25.0    # while fear is elevated
+
+  # SHADOW_DRIFT — BDI moving while VIX is calm (hidden pressure)
+  shadow_bdi_slope_abs: 0.08
+  shadow_vix:          20.0

@@ -1,0 +1,23 @@
+MARA_MODE=backtest              # backtest | paper | live
+MARA_LIVE=false
+
+# Free — register at fred.stlouisfed.org/docs/api/api_key.html
+FRED_API_KEY=your_key_here
+
+# Ollama (local, no cost)
+OLLAMA_HOST=http://ollama:11434
+OLLAMA_MODEL=phi3:mini          # phi3:mini on Pi | llama3:8b on laptop
+
+# Polymarket wallet (needed for execution, not for signal reading)
+POLY_PRIVATE_KEY=
+POLY_PROXY_WALLET=
+
+# IBKR — Phase 3 only
+IBKR_HOST=127.0.0.1
+IBKR_PORT=7497
+IBKR_CLIENT_ID=1
+
+# Arbitrader exchanges (added to workers/arbitrader/application.yaml, not here)
+# Crypto public REST — no keys needed for data
+BINANCE_REST=https://fapi.binance.com
+BYBIT_REST=https://api.bybit.com.venv/
