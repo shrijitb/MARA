@@ -1,23 +1,103 @@
-MARA_MODE=backtest              # backtest | paper | live
-MARA_LIVE=false
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
 
-# Free — register at fred.stlouisfed.org/docs/api/api_key.html
-FRED_API_KEY=your_key_here
+# C extensions
+*.so
 
-# Ollama (local, no cost)
-OLLAMA_HOST=http://ollama:11434
-OLLAMA_MODEL=phi3:mini          # phi3:mini on Pi | llama3:8b on laptop
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Polymarket wallet (needed for execution, not for signal reading)
-POLY_PRIVATE_KEY=
-POLY_PROXY_WALLET=
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
 
-# IBKR — Phase 3 only
-IBKR_HOST=127.0.0.1
-IBKR_PORT=7497
-IBKR_CLIENT_ID=1
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
 
-# Arbitrader exchanges (added to workers/arbitrader/application.yaml, not here)
-# Crypto public REST — no keys needed for data
-BINANCE_REST=https://fapi.binance.com
-BYBIT_REST=https://api.bybit.com.venv/
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+.vscode/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Data
+data/
+*.csv
+*.json
+*.sqlite
+*.sqlite3
+
+# Secrets
+.env.example
+# Keep .env.example but not .env
+
+# Docker
+docker-compose.override.yml
+
+# Misc
+.cache
+.coverage
+.venv
+env
+venv
+ENV
+env.bak
+venv.bak
+.vscode
+.idea
+.swp
+.swo
