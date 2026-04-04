@@ -10,46 +10,46 @@ regimes:
     polymarket:  0.30   # prediction markets peak during war/election events
     swing_trend: 0.10   # trend following on defense/commodity moves
     nautilus:    0.15   # backtest-driven signals as secondary layer
-    autohedge:   0.00   # advisory only — no direct capital
+    analyst:   0.00   # advisory only — no direct capital
 
   CRISIS_ACUTE:
     arbitrader:  0.20   # reduced — liquidity dries up, spreads blow out
     polymarket:  0.00   # pause — CLOB liquidity collapses in panic
     swing_trend: 0.00   # no directional bets in panic conditions
     nautilus:    0.30   # defensive positioning via backtest signals
-    autohedge:   0.50   # max hedging advisory weight
+    analyst:   0.50   # max hedging advisory weight
 
   BEAR_RECESSION:
     arbitrader:  0.30
     polymarket:  0.15
     swing_trend: 0.15   # short bias opportunities
     nautilus:    0.35
-    autohedge:   0.05
+    analyst:   0.05
 
   BULL_FROTHY:
     arbitrader:  0.35   # funding rates elevated = arb opportunity
     polymarket:  0.25   # active markets in euphoria
     swing_trend: 0.20   # momentum longs
     nautilus:    0.15
-    autohedge:   0.05
+    analyst:   0.05
 
   REGIME_CHANGE:
     arbitrader:  0.25
     polymarket:  0.30   # uncertainty = good market-making conditions
     swing_trend: 0.10   # reduced — direction unclear
     nautilus:    0.30
-    autohedge:   0.05
+    analyst:   0.05
 
   SHADOW_DRIFT:
     arbitrader:  0.30
     polymarket:  0.20
     swing_trend: 0.15
     nautilus:    0.30
-    autohedge:   0.05
+    analyst:   0.05
 
   BULL_CALM:
     arbitrader:  0.25
     polymarket:  0.20
     swing_trend: 0.25
     nautilus:    0.25
-    autohedge:   0.05
+    analyst:   0.05

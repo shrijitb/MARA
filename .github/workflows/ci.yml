@@ -91,15 +91,15 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/mara-polymarket:latest
             ${{ secrets.DOCKER_USERNAME }}/mara-polymarket:${{ steps.vars.outputs.sha_short }}
 
-      - name: Build and push mara-autohedge
+      - name: Build and push mara-analyst
         uses: docker/build-push-action@v6
         with:
-          context: ./workers/autohedge
+          context: ./workers/analyst
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/mara-autohedge:latest
-            ${{ secrets.DOCKER_USERNAME }}/mara-autohedge:${{ steps.vars.outputs.sha_short }}
+            ${{ secrets.DOCKER_USERNAME }}/mara-analyst:latest
+            ${{ secrets.DOCKER_USERNAME }}/mara-analyst:${{ steps.vars.outputs.sha_short }}
 
       - name: Build and push mara-arbitrader
         uses: docker/build-push-action@v6

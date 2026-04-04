@@ -15,9 +15,9 @@ scrape_configs:
     static_configs:
       - targets: ['worker-polymarket:8002']
 
-  - job_name: mara-autohedge
+  - job_name: mara-analyst
     static_configs:
-      - targets: ['worker-autohedge:8003']
+      - targets: ['worker-analyst:8003']
 
   - job_name: mara-arbitrader
     static_configs:

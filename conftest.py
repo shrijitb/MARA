@@ -35,7 +35,7 @@ TWO JOBS
        fastapi            — FastAPI, HTTPException (no-op)
        fastapi.responses  — JSONResponse (no-op)
 
-   Worker modules (nautilus, arbitrader, autohedge, polymarket) are loaded
+   Worker modules (nautilus, arbitrader, analyst, polymarket) are loaded
    only inside TestClient fixtures which run inside the venv where fastapi
    and httpx are actually installed.  Those tests do NOT use these stubs.
 """

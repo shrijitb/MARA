@@ -353,13 +353,13 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "mara_worker_paused{worker=\"autohedge\"}",
+          "expr": "mara_worker_paused{worker=\"analyst\"}",
           "instant": true,
-          "legendFormat": "autohedge",
+          "legendFormat": "analyst",
           "refId": "A"
         }
       ],
-      "title": "autohedge",
+      "title": "analyst",
       "type": "stat"
     },
 

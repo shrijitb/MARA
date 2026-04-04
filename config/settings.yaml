@@ -42,11 +42,11 @@ workers:
     enabled: true
     port: 8001
     base_allocation: 0.50
-  autohedge:
+  analyst:
     enabled: true
     port: 8003
     base_allocation: 0.05
-    advisory_only: true           # never directly triggers orders
+    advisory_only: true           # regime-aware advisory via Ollama phi3:mini
   stocksharp:
     enabled: false                # Phase 2+
     port: 8005
