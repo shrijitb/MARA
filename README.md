@@ -1,8 +1,8 @@
-# MARA: Multi-Agent Risk-Adjusted Capital Orchestrator
+# Arka (alpha build, formerly MARA): Agentic Risk-Kinetic Allocator
 
-An open-source, autonomous trading system for turbulent macro environments. MARA coordinates specialized AI agents across crypto, futures, commodities, and prediction markets using dynamic regime-aware capital allocation.
+An open-source, autonomous trading system for turbulent macro environments. Arka coordinates specialized AI agents across crypto, futures, commodities, and prediction markets using dynamic regime-aware capital allocation.
 
-**Status**: Paper trading active (April 2026) | WAR_PREMIUM regime, 80% confidence | **License**: LGPL-3.0
+**Status**: Needs papertesting (April 2026) | **License**: LGPL-3.0
 
 ---
 
@@ -50,7 +50,7 @@ curl -s http://localhost:8000/status | python3 -m json.tool
 
 ## Project Overview
 
-MARA targets **futures, crypto, forex, ETFs, and prediction markets** in regime-driven trading. The system operates in sequence: **backtest → paper trading (current) → live**.
+Arka targets **futures, crypto, forex, ETFs, and prediction markets** in regime-driven trading. The system operates in sequence: **backtest → paper trading (current) → live**.
 
 ### Core Design
 
@@ -859,7 +859,7 @@ Multi-arch images (`linux/amd64,linux/arm64`) are pushed to Docker Hub in the bu
 
 ## Disclaimer
 
-MARA is a research and development system. Past performance does not guarantee future results. Trading involves risk of loss. Start with paper trading and thoroughly validate before live deployment. No warranty. Use at your own risk.
+ARKA is a research and development system. Past performance does not guarantee future results. Trading involves risk of loss. Start with paper trading and thoroughly validate before live deployment. No warranty. Use at your own risk.
 
 ---
 
