@@ -44,7 +44,11 @@ except ImportError:
     pass
 
 BOT_TOKEN   = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-ALLOWED_UID = int(os.environ.get("TELEGRAM_ALLOWED_USER_ID", "0"))
+try:
+    ALLOWED_UID = int(os.environ.get("TELEGRAM_ALLOWED_USER_ID", "0"))
+except ValueError:
+    ALLOWED_UID = 0
+    logger.warning("TELEGRAM_ALLOWED_USER_ID is not a valid integer — all users will be rejected")
 HYPER_URL   = os.environ.get("HYPERVISOR_URL", "http://hypervisor:8000")
 
 if not BOT_TOKEN:
@@ -65,7 +69,9 @@ def _allowed(update: Update) -> bool:
 
 async def _deny(update: Update):
     await update.message.reply_text("Unauthorized.")
-    logger.warning(f"Rejected message from user {update.effective_user.id}")
+    # effective_user can be None for certain update types (channel posts, etc.)
+    uid = update.effective_user.id if update.effective_user else "unknown"
+    logger.warning(f"Rejected message from user {uid}")
 
 
 # ── Hypervisor HTTP helpers ───────────────────────────────────────────────────

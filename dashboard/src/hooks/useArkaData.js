@@ -1,0 +1,36 @@
+import { useState, useEffect, useCallback } from 'react';
+
+export function useArkaData(intervalMs = 10000) {
+  const [data, setData] = useState(null);
+  const [setupStatus, setSetupStatus] = useState(null);
+  const [error, setError] = useState(null);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [stateRes, setupRes] = await Promise.all([
+        fetch('/api/dashboard/state'),
+        fetch('/api/setup/status'),
+      ]);
+
+      if (stateRes.ok) setData(await stateRes.json());
+      if (setupRes.ok) setSetupStatus(await setupRes.json());
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+    const id = setInterval(fetchData, intervalMs);
+    return () => clearInterval(id);
+  }, [fetchData, intervalMs]);
+
+  return {
+    data,
+    setupStatus,
+    setupComplete: setupStatus?.setup_complete ?? false,
+    error,
+    refresh: fetchData,
+  };
+}

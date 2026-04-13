@@ -1,0 +1,14 @@
+# workers/analyst/requirements.txt
+#
+# Core deps — always installed, must succeed
+fastapi
+uvicorn
+httpx
+structlog
+pyyaml
+
+# AI pipeline deps — optional, installed best-effort.
+# If unavailable for this platform/Python combo the worker starts in
+# stub mode (advisory_only=True, returns empty signal list).
+# The try/except in worker_api.py handles ImportError at runtime.
+litellm

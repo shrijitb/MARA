@@ -21,9 +21,12 @@
 
 FROM python:3.12-slim
 
-# System deps: curl for healthcheck, gcc for yfinance C extensions
+# System deps: curl for healthcheck, gcc for yfinance C extensions,
+# docker-cli so /setup/credentials can restart sibling containers.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl gcc \
+    && curl -fsSL https://download.docker.com/linux/static/stable/$(uname -m)/docker-26.1.3.tgz \
+       | tar -xz --strip-components=1 -C /usr/local/bin docker/docker \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

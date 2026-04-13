@@ -1,7 +1,7 @@
 services:
   # NOTE: No `platform:` flags here.
   #
-  # RUN ARM64 containers via QEMU on your amd64 host. This works for custom
+  # Run ARM64 containers via QEMU on your amd64 host. This works for custom
   # Python images we build (QEMU handles them) but kills pre-built native
   # binaries like ollama/ollama ("exec format error").
   #
@@ -10,7 +10,7 @@ services:
 
   ollama:
     image: ollama/ollama:latest
-    container_name: mara-ollama
+    container_name: arka-ollama
     volumes:
       - ollama_data:/root/.ollama
     ports:
@@ -34,7 +34,7 @@ services:
     build:
       context: .
       dockerfile: hypervisor/Dockerfile
-    container_name: mara-hypervisor
+    container_name: arka-hypervisor
     depends_on:
       ollama:
         condition: service_started
@@ -43,6 +43,10 @@ services:
     volumes:
       - ./config:/app/config:ro
       - ./data/db:/app/data/db
+      # Writable .env so /setup/credentials can persist credentials
+      - ./.env:/app/.env
+      # Docker socket so the hypervisor can restart sibling containers after credential save
+      - /var/run/docker.sock:/var/run/docker.sock
     env_file: .env
     restart: unless-stopped
     healthcheck:
@@ -52,9 +56,19 @@ services:
       retries: 5
       start_period: 15s
 
+  dashboard:
+    build: ./dashboard
+    container_name: arka-dashboard
+    depends_on:
+      hypervisor:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
   worker-nautilus:
     build: ./workers/nautilus
-    container_name: mara-nautilus
+    container_name: arka-nautilus
     depends_on:
       hypervisor:
         condition: service_healthy
@@ -72,31 +86,28 @@ services:
       retries: 3
       start_period: 20s
 
-  worker-polymarket:
-    build: ./workers/polymarket
-    container_name: mara-polymarket
+  worker-prediction-markets:
+    build: ./workers/prediction_markets
+    container_name: arka-prediction-markets
     depends_on:
       hypervisor:
         condition: service_healthy
     ports:
       - "8002:8002"
-    volumes:
-      - ./config:/app/config:ro
     env_file: .env
     restart: unless-stopped
     healthcheck:
-      # polymarket image has no curl — use python3 (always present in python:3.11-slim)
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8002/health', timeout=4)"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 15s
 
-  worker-autohedge:
-    build: ./workers/autohedge
-    container_name: mara-autohedge
+  worker-analyst:
+    build: ./workers/analyst
+    container_name: arka-analyst
     depends_on:
-      # service_started not service_healthy — autohedge handles Ollama
+      # service_started not service_healthy — analyst handles Ollama
       # connection failure gracefully (stub mode, advisory_only=True).
       ollama:
         condition: service_started
@@ -111,30 +122,9 @@ services:
       retries: 3
       start_period: 15s
 
-  worker-arbitrader:
-    build: ./workers/arbitrader
-    container_name: mara-arbitrader
-    depends_on:
-      hypervisor:
-        condition: service_healthy
-    ports:
-      - "8004:8004"
-    volumes:
-      - arbitrader_logs:/app/logs
-    environment:
-      JAVA_OPTS: "-Xmx400m -Xms128m"
-    env_file: .env
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
-
   worker-telegram-bot:
     build: ./workers/telegram_bot
-    container_name: mara-telegram-bot
+    container_name: arka-telegram-bot
     depends_on:
       hypervisor:
         condition: service_healthy
@@ -145,7 +135,7 @@ services:
 
   worker-core-dividends:
     build: ./workers/core_dividends
-    container_name: mara-core-dividends
+    container_name: arka-core-dividends
     depends_on:
       hypervisor:
         condition: service_healthy
@@ -160,20 +150,5 @@ services:
       retries: 3
       start_period: 15s
 
-  worker-stocksharp:
-    build: ./workers/stocksharp/src
-    container_name: mara-stocksharp
-    profiles:
-      - paper
-      - live
-    depends_on:
-      hypervisor:
-        condition: service_healthy
-    ports:
-      - "8005:8005"
-    env_file: .env
-    restart: unless-stopped
-
 volumes:
   ollama_data:
-  arbitrader_logs:

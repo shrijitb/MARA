@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+/* ── Custom design tokens ─────────────────────────────────────── */
+@theme {
+  /* Backgrounds */
+  --color-card:    #0A0A0A;
+  --color-surface: #111111;
+  --color-modal:   #0D0D0D;
+
+  /* Text */
+  --color-cream:   #FFFDD0;
+  --color-muted:   #B0AE98;
+  --color-data:    #C8C6B0;
+
+  /* Semantic accents */
+  --color-profit:  #00E676;
+  --color-loss:    #FF1744;
+  --color-warn:    #FFD740;
+  --color-info:    #00B0FF;
+  --color-purple:  #E040FB;
+  --color-orange:  #FF9100;
+
+  /* Borders */
+  --color-edge:    #1A1A1A;
+  --color-rim:     #2A2A2A;
+  --color-line:    #333333;
+
+  /* Typography */
+  --font-jetbrains: 'JetBrains Mono', monospace;
+}
+
+/* ── Base resets ───────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #000000;
+  color: #FFFDD0;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  height: 100%;
+}
+
+#root { height: 100%; }
+
+/* ── Scrollbar ──────────────────────────────────────────────────── */
+::-webkit-scrollbar          { width: 3px; height: 3px; }
+::-webkit-scrollbar-track    { background: transparent; }
+::-webkit-scrollbar-thumb    { background: #2A2A2A; border-radius: 2px; }
+
+/* ── Keyframe animations ─────────────────────────────────────── */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,215,64,0.5); }
+  50%       { box-shadow: 0 0 0 8px rgba(255,215,64,0); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes sun-float {
+  0%,100% { transform: scale(1.0) rotate(0deg);  filter: drop-shadow(0 0 14px rgba(255,215,64,.5)); }
+  50%      { transform: scale(1.10) rotate(6deg); filter: drop-shadow(0 0 24px rgba(255,215,64,.8)); }
+}
+@keyframes cloud-drift {
+  0%,100% { transform: translateX(0); }
+  50%      { transform: translateX(5px); }
+}
+@keyframes lightning {
+  0%,87%,91%,95%,100% { opacity: 1; }
+  88%,92%,96%          { opacity: 0.05; }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+@keyframes gradient-flow {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+/* ── Animation utility classes ───────────────────────────────── */
+.anim-pulse       { animation: pulse-soft 2s ease-in-out infinite; }
+.anim-spin        { animation: spin 1s linear infinite; }
+.anim-sun         { animation: sun-float 4s ease-in-out infinite; }
+.anim-cloud       { animation: cloud-drift 4s ease-in-out infinite; }
+.anim-lightning   { animation: lightning 3s ease-in-out infinite; }
+.anim-slide-up    { animation: slide-up 0.3s ease-out; }
+.anim-fade-in     { animation: fade-in 0.4s ease-out; }
+.anim-pulse-border{ animation: pulse-border 2s ease-in-out infinite; }
+
+/* ── Glassmorphism helpers ───────────────────────────────────── */
+.glass {
+  background: rgba(10,10,10,0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ── Gradient text ───────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #FFFDD0, #FFD740);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

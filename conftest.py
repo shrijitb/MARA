@@ -35,9 +35,9 @@ TWO JOBS
        fastapi            — FastAPI, HTTPException (no-op)
        fastapi.responses  — JSONResponse (no-op)
 
-   Worker modules (nautilus, arbitrader, autohedge, polymarket) are loaded
-   only inside TestClient fixtures which run inside the venv where fastapi
-   and httpx are actually installed.  Those tests do NOT use these stubs.
+   Worker modules (nautilus, analyst, prediction_markets, core_dividends) are
+   loaded only inside TestClient fixtures which run inside the venv where
+   fastapi and httpx are actually installed.  Those tests do NOT use these stubs.
 """
 
 import sys
@@ -61,7 +61,7 @@ def _check_venv():
     print(
         "\n"
         "╔══════════════════════════════════════════════════════════════╗\n"
-        "║  MARA DRY-RUN: WRONG PYTHON INTERPRETER                     ║\n"
+        "║  ARKA DRY-RUN: WRONG PYTHON INTERPRETER                     ║\n"
         "║                                                              ║\n"
         f"║  Running: {executable[:52]:<52} ║\n"
         "║                                                              ║\n"
@@ -123,6 +123,7 @@ class _FakeAsyncClient:
 class _FakeResponse:
     status_code = 200
     def json(self): return {}
+    def raise_for_status(self): pass   # stub: 200 never raises
     text = ""
 
 _install_stub("httpx", {

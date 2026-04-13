@@ -1,55 +1,38 @@
 # config/allocations.yaml
-# Per-regime capital allocation across all workers.
-# Values are fractions (must sum to 1.0 per regime).
-# Read by hypervisor/allocator/capital.py at startup.
+# Per-state capital allocation weights across all workers.
+# Source of truth is hypervisor/allocator/capital.py ALLOCATION_PROFILES.
+# This file is documentation only — allocator reads from capital.py directly.
+# Values are fractions (must sum to 1.0 per state).
 
-regimes:
+states:
 
-  WAR_PREMIUM:
-    arbitrader:  0.45   # funding arb — high crypto activity in geopolitical stress
-    polymarket:  0.30   # prediction markets peak during war/election events
-    swing_trend: 0.10   # trend following on defense/commodity moves
-    nautilus:    0.15   # backtest-driven signals as secondary layer
-    autohedge:   0.00   # advisory only — no direct capital
+  RISK_ON:
+    nautilus:             0.44   # Max swing allocation in bullish conditions
+    prediction_markets:   0.12   # Active markets in euphoria
+    analyst:              0.08   # Advisory-only AI layer
+    core_dividends:       0.36   # Strong passive allocation in risk-on
 
-  CRISIS_ACUTE:
-    arbitrader:  0.20   # reduced — liquidity dries up, spreads blow out
-    polymarket:  0.00   # pause — CLOB liquidity collapses in panic
-    swing_trend: 0.00   # no directional bets in panic conditions
-    nautilus:    0.30   # defensive positioning via backtest signals
-    autohedge:   0.50   # max hedging advisory weight
+  RISK_OFF:
+    nautilus:             0.34   # Reduced directional exposure
+    prediction_markets:   0.18   # Elevated vol = wider spreads = better edge
+    analyst:              0.08   # Advisory layer
+    core_dividends:       0.40   # Defensive tilt to passive
 
-  BEAR_RECESSION:
-    arbitrader:  0.30
-    polymarket:  0.15
-    swing_trend: 0.15   # short bias opportunities
-    nautilus:    0.35
-    autohedge:   0.05
+  CRISIS:
+    nautilus:             0.10   # Minimal directional — keep stops tight
+    prediction_markets:   0.20   # Binary markets still function in panic
+    analyst:              0.00   # Advisory paused — uncertainty too high
+    core_dividends:       0.30   # Hold passive; remainder in cash
 
-  BULL_FROTHY:
-    arbitrader:  0.35   # funding rates elevated = arb opportunity
-    polymarket:  0.25   # active markets in euphoria
-    swing_trend: 0.20   # momentum longs
-    nautilus:    0.15
-    autohedge:   0.05
+  TRANSITION:
+    nautilus:             0.32   # Reduced until regime stabilises
+    prediction_markets:   0.16   # Uncertainty = good market-making conditions
+    analyst:              0.08   # Advisory layer
+    core_dividends:       0.44   # Defensive passive tilt
 
-  REGIME_CHANGE:
-    arbitrader:  0.25
-    polymarket:  0.30   # uncertainty = good market-making conditions
-    swing_trend: 0.10   # reduced — direction unclear
-    nautilus:    0.30
-    autohedge:   0.05
-
-  SHADOW_DRIFT:
-    arbitrader:  0.30
-    polymarket:  0.20
-    swing_trend: 0.15
-    nautilus:    0.30
-    autohedge:   0.05
-
-  BULL_CALM:
-    arbitrader:  0.25
-    polymarket:  0.20
-    swing_trend: 0.25
-    nautilus:    0.25
-    autohedge:   0.05
+# Max deploy fractions per state (remainder stays in cash)
+max_deploy:
+  RISK_ON:    0.80
+  RISK_OFF:   0.75
+  CRISIS:     0.50
+  TRANSITION: 0.70

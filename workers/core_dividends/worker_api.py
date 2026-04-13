@@ -11,17 +11,17 @@ Strategy:
   In paper mode: tracks virtual positions at last known price, reports
   mark-to-market PnL via yfinance prices.
 
-  In live mode (Phase 3): requires IBKR/StockSharp to place orders.
+  In live mode (Phase 3): requires a wired broker to place orders.
   Until then, advisory_only=True on all signals.
 
-REST contract (standard MARA worker):
+REST contract (standard Arka worker):
   GET  /health    liveness
   GET  /status    pnl, sharpe, allocated_usd, open_positions
   GET  /metrics   Prometheus text
   POST /regime    (passive — no regime-specific behaviour)
   POST /allocate  receive capital, resize paper positions
   POST /signal    return current hold signals
-  POST /execute   advisory only until IBKR wired
+  POST /execute   advisory only until broker wired
   POST /pause
   POST /resume
 """
@@ -73,7 +73,7 @@ class DividendState:
     def __init__(self):
         self.allocated_usd:   float = 0.0
         self.paper_trading:   bool  = True
-        self.current_regime:  str   = "BULL_CALM"
+        self.current_regime:  str   = "TRANSITION"
         self.paused:          bool  = False
         self.start_time:      float = time.time()
 
@@ -174,7 +174,7 @@ async def allocate(body: dict):
 
     if amount >= 10.0 and not state.paused:
         import asyncio
-        await asyncio.get_event_loop().run_in_executor(None, state.enter_positions, amount)
+        await asyncio.get_running_loop().run_in_executor(None, state.enter_positions, amount)
         return {"status": "allocated_and_positioned", "amount_usd": amount,
                 "positions": list(state._positions.keys())}
 
@@ -190,7 +190,7 @@ async def update_regime(body: dict):
 
 @app.post("/signal")
 async def signal(body: dict):
-    """Return hold signals for SCHD and VYM. advisory_only until IBKR wired."""
+    """Return hold signals for SCHD and VYM. advisory_only until broker wired."""
     if state.paused:
         return []
     return [
@@ -202,7 +202,7 @@ async def signal(body: dict):
             "suggested_size_pct": WEIGHT_EACH,
             "regime_tags":        [state.current_regime],
             "ttl_seconds":        86400,
-            "advisory_only":      True,   # PHASE 3: remove when IBKR wired
+            "advisory_only":      True,   # PHASE 3: remove when broker wired
             "rationale":          "Passive dividend buy-and-hold | SCHD+VYM 50/50",
         }
         for ticker in DIVIDEND_PAIRS
@@ -211,9 +211,9 @@ async def signal(body: dict):
 
 @app.post("/execute")
 async def execute(body: dict):
-    """Advisory only — no live execution until IBKR/StockSharp wired (Phase 3)."""
+    """Advisory only — no live execution until broker wired (Phase 3)."""
     return {"status": "advisory_only", "executed": False,
-            "note": "PHASE 3: live execution via IBKR not yet wired"}
+            "note": "PHASE 3: live execution not yet wired"}
 
 
 @app.post("/pause")
@@ -235,7 +235,7 @@ def metrics():
     active  = 0 if state.paused else 1
     pnl     = state.mark_to_market_pnl()
     content = (
-        f'mara_worker_active{{worker="core_dividends"}} {active}\n'
+        f'arka_worker_active{{worker="core_dividends"}} {active}\n'
         f'mara_core_dividends_pnl_usd {pnl:.4f}\n'
         f'mara_core_dividends_open_positions {state.open_positions()}\n'
         f'mara_core_dividends_allocated_usd {state.allocated_usd:.2f}\n'

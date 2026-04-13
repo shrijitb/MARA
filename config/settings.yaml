@@ -8,9 +8,9 @@ system:
 
 data:
   tickers:
-    bdi: "^BDI"
+    bdi: "BDRY"                  # BDRY ETF as BDI proxy (^BDI delisted from yfinance)
     vix: "^VIX"
-    dxy: "DX-Y.NYB"
+    dxy: "UUP"                   # UUP ETF as DXY proxy (DX=F unreliable)
     yield_curve_fred: "T10Y2Y"
     gold: "GC=F"
     oil: "CL=F"
@@ -23,31 +23,25 @@ data:
     defense: [NATO, SHLD, PPA, ITA]
     resources: [REMX]
   crypto:
-    funding_symbols: [BTCUSDT, ETHUSDT, SOLUSDT]
+    funding_symbols: [BTC-USDT-SWAP, ETH-USDT-SWAP, SOL-USDT-SWAP]
     ohlcv_pairs: ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
 
 workers:
-  arbitrader:
-    enabled: true
-    port: 8004
-    base_allocation: 0.10
-    sidecar_log_path: /app/logs/arbitrader.log
-  polymarket:
-    enabled: true
-    port: 8002
-    base_allocation: 0.05
-    poll_interval_sec: 300
-    signal_only: true             # no auto-execution until Phase 3
   nautilus:
     enabled: true
     port: 8001
-    base_allocation: 0.50
-  autohedge:
+    base_allocation: 0.44
+  prediction_markets:
+    enabled: true
+    port: 8002
+    base_allocation: 0.12
+    signal_only: true             # no auto-execution until Phase 3
+  analyst:
     enabled: true
     port: 8003
-    base_allocation: 0.05
+    base_allocation: 0.08
     advisory_only: true           # never directly triggers orders
-  stocksharp:
-    enabled: false                # Phase 2+
-    port: 8005
-    base_allocation: 0.30
+  core_dividends:
+    enabled: true
+    port: 8006
+    base_allocation: 0.36

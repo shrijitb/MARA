@@ -1,7 +1,7 @@
 """
 hypervisor/main.py
 
-MARA Hypervisor — The Regime-Aware Orchestrator.
+Arka Hypervisor — The Regime-Aware Orchestrator.
 
 Cycle (every CYCLE_INTERVAL_SEC, default 3600s):
   1. Health-check all workers via GET /health
@@ -29,15 +29,20 @@ Run (from ~/mara with venv active):
 """
 
 import asyncio
+import json
 import logging
 import os
+import re
+import subprocess
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Dict, List, Optional
 
 import httpx
 import requests as _requests
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 try:
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -62,22 +67,21 @@ INITIAL_CAPITAL_USD = float(os.environ.get("INITIAL_CAPITAL_USD", 200.0))
 CYCLE_INTERVAL_SEC  = int(os.environ.get("CYCLE_INTERVAL_SEC", 3600))
 WORKER_TIMEOUT_SEC  = int(os.environ.get("WORKER_TIMEOUT_SEC", 10))
 MIN_TRADE_SIZE_USD  = float(os.environ.get("MIN_TRADE_SIZE_USD", 10.0))
-PAPER_TRADING       = os.environ.get("MARA_LIVE", "false").lower() != "true"
+PAPER_TRADING       = os.environ.get("ARKA_LIVE", "false").lower() != "true"
 
 # ── Worker Registry ───────────────────────────────────────────────────────────
-# Keys MUST match capital.py REGIME_PROFILES keys exactly.
+# Keys MUST match capital.py ALLOCATION_PROFILES keys exactly.
 # docker-compose service names resolve via Docker DNS (e.g. worker-nautilus).
 # Override with env vars for local dev or Pi deploy.
 WORKER_REGISTRY: Dict[str, str] = {
-    "nautilus":       os.environ.get("NAUTILUS_URL",        "http://worker-nautilus:8001"),
-    "polymarket":     os.environ.get("POLYMARKET_URL",      "http://worker-polymarket:8002"),
-    "autohedge":      os.environ.get("AUTOHEDGE_URL",       "http://worker-autohedge:8003"),
-    "arbitrader":     os.environ.get("ARBITRADER_URL",      "http://worker-arbitrader:8004"),
-    "core_dividends": os.environ.get("CORE_DIVIDENDS_URL",  "http://worker-core-dividends:8006"),
+    "nautilus":             os.environ.get("NAUTILUS_URL",             "http://worker-nautilus:8001"),
+    "prediction_markets":   os.environ.get("PREDICTION_MARKETS_URL",  "http://worker-prediction-markets:8002"),
+    "analyst":              os.environ.get("ANALYST_URL",              "http://worker-analyst:8003"),
+    "core_dividends":       os.environ.get("CORE_DIVIDENDS_URL",       "http://worker-core-dividends:8006"),
 }
 
 # Regimes that force all directional workers to pause new entries
-DEFENSIVE_REGIMES = {"CRISIS_ACUTE"}
+DEFENSIVE_REGIMES = {"CRISIS"}
 
 
 # ── Global State ──────────────────────────────────────────────────────────────
@@ -85,7 +89,7 @@ class HypervisorState:
     def __init__(self):
         self.total_capital:     float            = INITIAL_CAPITAL_USD
         self.free_capital:      float            = INITIAL_CAPITAL_USD
-        self.current_regime:    str              = "BULL_CALM"
+        self.current_regime:    str              = "TRANSITION"
         self.regime_confidence: float            = 0.0
         self.worker_health:     Dict[str, bool]  = {}
         self.worker_status:     Dict[str, Dict]  = {}
@@ -97,9 +101,11 @@ class HypervisorState:
         self.started_at:        float            = time.time()
         self.halted:            bool             = False
         self.halt_reason:       str              = ""
-        self.allocations:       Dict[str, float] = {}
-        self.risk_verdict:      str              = "OK"
-        self.watchlist:         List[str]        = []
+        self.allocations:           Dict[str, float] = {}
+        self.regime_probabilities:  Dict[str, float] = {}
+        self.circuit_breaker_active: bool            = False
+        self.risk_verdict:          str              = "OK"
+        self.watchlist:             List[str]        = []
 
 
 state      = HypervisorState()
@@ -140,8 +146,8 @@ def _run_quarterly_sweep() -> None:
     Calculates surplus above INITIAL_CAPITAL_USD * 1.10, logs it, and
     sends a Telegram alert.
 
-    # PHASE 3: wire IBKR redemption — transfer surplus to bank account.
-    # PHASE 3: wire USDT redemption — swap surplus USDT → fiat via OKX.
+    # PHASE 3: wire OKX redemption — swap surplus USDT → fiat via OKX.
+    # PHASE 3: wire broker redemption — transfer surplus to bank account.
     """
     target     = INITIAL_CAPITAL_USD * PROFIT_TARGET_MULTIPLIER
     surplus    = round(state.total_capital - target, 2)
@@ -151,18 +157,18 @@ def _run_quarterly_sweep() -> None:
 
     if surplus > 0:
         msg = (
-            f"📈 *MARA Quarterly Profit Sweep*\n"
+            f"📈 *Arka Quarterly Profit Sweep*\n"
             f"Total capital: ${total:.2f}\n"
             f"Target floor:  ${target:.2f} (initial × 1.10)\n"
             f"Surplus:       *${surplus:.2f}*\n"
             f"Regime: `{regime}` | Cycles: {cycle}\n\n"
-            f"_PHASE 3: IBKR/USDT redemption not yet wired._"
+            f"_PHASE 3: OKX/USDT redemption not yet wired._"
         )
         logger.info(f"Quarterly sweep: surplus=${surplus:.2f} above ${target:.2f} floor")
     else:
         shortfall = round(target - state.total_capital, 2)
         msg = (
-            f"📊 *MARA Quarterly Sweep — No Surplus*\n"
+            f"📊 *Arka Quarterly Sweep — No Surplus*\n"
             f"Total capital: ${total:.2f}\n"
             f"Target floor:  ${target:.2f}\n"
             f"Shortfall:     ${shortfall:.2f}\n"
@@ -177,7 +183,7 @@ def _run_quarterly_sweep() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("=" * 60)
-    logger.info("  MARA HYPERVISOR STARTING")
+    logger.info("  ARKA HYPERVISOR STARTING")
     logger.info(f"  Capital  : ${INITIAL_CAPITAL_USD:.2f}")
     logger.info(f"  Cycle    : {CYCLE_INTERVAL_SEC}s")
     logger.info(f"  Mode     : {'PAPER' if PAPER_TRADING else 'LIVE — REAL MONEY'}")
@@ -196,8 +202,15 @@ async def lifespan(app: FastAPI):
             id="quarterly_sweep",
             replace_existing=True,
         )
+        scheduler.add_job(
+            classifier.retrain,
+            CronTrigger(day=1, hour=3, minute=0),
+            id="hmm_monthly_retrain",
+            replace_existing=True,
+        )
         scheduler.start()
         logger.info("Quarterly profit sweep scheduler started (Jan/Apr/Jul/Oct 7th @ 09:00)")
+        logger.info("HMM monthly retrain scheduler started (1st of each month @ 03:00)")
     else:
         logger.warning("APScheduler not installed — quarterly sweep disabled. "
                        "Add apscheduler to requirements.txt.")
@@ -211,10 +224,17 @@ async def lifespan(app: FastAPI):
         pass
     if scheduler:
         scheduler.shutdown(wait=False)
-    logger.info("MARA Hypervisor shut down cleanly.")
+    logger.info("Arka Hypervisor shut down cleanly.")
 
 
-app = FastAPI(title="MARA Hypervisor", version="1.1.0", lifespan=lifespan)
+app = FastAPI(title="Arka Hypervisor", version="2.0.0", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
 
 
 # ── Orchestration Loop ────────────────────────────────────────────────────────
@@ -248,11 +268,24 @@ async def _run_cycle():
     _reconcile_capital()
 
     # Step 3: Classify regime
+    regime_probs_array = None   # numpy (4,) — set when HMM classification succeeds
     try:
         result = await asyncio.to_thread(classifier.classify_sync)
-        state.current_regime    = result.regime.value
-        state.regime_confidence = result.confidence
-        logger.info(f"  Regime: {state.current_regime} ({state.regime_confidence:.0%})")
+        state.current_regime         = result.regime.value
+        state.regime_confidence      = result.confidence
+        state.regime_probabilities   = result.probabilities
+        state.circuit_breaker_active = result.circuit_breaker_active
+        # Build numpy array from probabilities dict (order must match HMM_STATE_LABELS)
+        from hypervisor.allocator.capital import HMM_STATE_LABELS
+        import numpy as np
+        regime_probs_array = np.array(
+            [result.probabilities.get(lbl, 0.0) for lbl in HMM_STATE_LABELS],
+            dtype=float,
+        )
+        logger.info(
+            f"  Regime: {state.current_regime} ({state.regime_confidence:.0%})"
+            f"  CB={state.circuit_breaker_active}"
+        )
     except Exception as exc:
         logger.error(f"Regime classification failed: {exc} — holding {state.current_regime}")
 
@@ -282,12 +315,13 @@ async def _run_cycle():
             state.halted     = False
             state.halt_reason = ""
 
-    # Step 5: Allocate
+    # Step 5: Allocate (use HMM probability vector when available)
     alloc = allocator.compute(
         regime          = state.current_regime,
         worker_health   = state.worker_health,
         worker_sharpe   = state.worker_sharpe,
         registered_only = healthy,
+        probabilities   = regime_probs_array,
     )
     state.allocations = alloc.allocations
     logger.info(f"  {alloc.summary()}")
@@ -472,7 +506,12 @@ async def workers():
 
 @app.get("/regime")
 async def current_regime():
-    return {"regime": state.current_regime, "confidence": round(state.regime_confidence, 3)}
+    return {
+        "regime":                 state.current_regime,
+        "confidence":             round(state.regime_confidence, 3),
+        "probabilities":          state.regime_probabilities,
+        "circuit_breaker_active": state.circuit_breaker_active,
+    }
 
 
 @app.get("/risk")
@@ -547,3 +586,125 @@ async def add_to_watchlist(body: dict):
         state.watchlist.append(ticker)
         logger.info(f"Watchlist: added {ticker}")
     return {"watchlist": state.watchlist}
+
+
+# ── Setup / Hardware endpoints ─────────────────────────────────────────────────
+
+_HARDWARE_PROFILE_PATH = Path("/app/.hardware_profile.json")
+
+# Keys the wizard is allowed to write into .env
+_ALLOWED_CREDENTIAL_KEYS = {
+    "OKX_API_KEY", "OKX_API_SECRET", "OKX_API_PASSPHRASE",
+    "FRED_API_KEY",
+    "KALSHI_EMAIL", "KALSHI_PASSWORD",
+    "POLY_PRIVATE_KEY", "POLY_PROXY_WALLET",
+    "TELEGRAM_BOT_TOKEN", "TELEGRAM_ALLOWED_USER_ID",
+    "NTFY_TOPIC",
+    "SETUP_COMPLETE",
+}
+
+_CONTAINER_RESTART_MAP: Dict[str, str] = {
+    "OKX_API_KEY":               "worker-nautilus",
+    "OKX_API_SECRET":            "worker-nautilus",
+    "OKX_API_PASSPHRASE":        "worker-nautilus",
+    "KALSHI_EMAIL":              "worker-prediction-markets",
+    "KALSHI_PASSWORD":           "worker-prediction-markets",
+    "POLY_PRIVATE_KEY":          "worker-prediction-markets",
+    "TELEGRAM_BOT_TOKEN":        "worker-telegram-bot",
+    "TELEGRAM_ALLOWED_USER_ID":  "worker-telegram-bot",
+}
+
+
+async def _check_ollama_health() -> bool:
+    try:
+        async with httpx.AsyncClient(timeout=4) as client:
+            r = await client.get(f"{os.environ.get('OLLAMA_HOST', 'http://ollama:11434')}/api/version")
+            return r.status_code == 200
+    except Exception:
+        return False
+
+
+def _restart_container(service: str) -> None:
+    project = os.environ.get("COMPOSE_PROJECT_NAME", "arka")
+    container = f"{project}-{service.replace('worker-', '')}"
+    try:
+        subprocess.run(
+            ["docker", "restart", container],
+            capture_output=True, timeout=15,
+        )
+        logger.info(f"Restarted container: {container}")
+    except Exception as exc:
+        logger.warning(f"Could not restart {container}: {exc}")
+
+
+@app.get("/system/hardware")
+async def system_hardware():
+    """Returns detected hardware profile written by install.sh."""
+    if _HARDWARE_PROFILE_PATH.exists():
+        return json.loads(_HARDWARE_PROFILE_PATH.read_text())
+    return {"error": "Hardware profile not detected — re-run install.sh"}
+
+
+@app.get("/setup/status")
+async def setup_status():
+    """Returns which setup steps are complete. Safe to poll from the dashboard."""
+    env = os.environ
+    ollama_ok = await _check_ollama_health()
+    return {
+        "hardware_detected":         _HARDWARE_PROFILE_PATH.exists(),
+        "okx_configured":            bool(env.get("OKX_API_KEY")),
+        "telegram_configured":       bool(env.get("TELEGRAM_BOT_TOKEN")),
+        "fred_configured":           bool(env.get("FRED_API_KEY")),
+        "kalshi_configured":         bool(env.get("KALSHI_EMAIL")),
+        "prediction_markets_configured": bool(env.get("POLY_PRIVATE_KEY") or env.get("KALSHI_EMAIL")),
+        "ntfy_configured":           bool(env.get("NTFY_TOPIC")),
+        "ollama_ready":              ollama_ok,
+        "setup_complete":            env.get("SETUP_COMPLETE", "false") == "true",
+    }
+
+
+@app.post("/setup/credentials")
+async def save_credentials(body: dict):
+    """
+    Dashboard wizard POSTs credentials here.
+    Writes allowed keys to .env, updates live env, restarts affected containers.
+    Never returns credential values.
+    """
+    env_path = Path("/app/.env")
+    if not env_path.exists():
+        raise HTTPException(status_code=500, detail=".env not found — re-run install.sh")
+
+    env_content = env_path.read_text()
+    updated_keys: List[str] = []
+    containers_to_restart: set = set()
+
+    for key, value in body.items():
+        if key not in _ALLOWED_CREDENTIAL_KEYS:
+            logger.warning(f"setup/credentials: rejected unknown key {key!r}")
+            continue
+        value_str = str(value).strip()
+        # Replace existing key=... line or append if not present
+        pattern = rf'^{re.escape(key)}=.*$'
+        new_line = f'{key}={value_str}'
+        if re.search(pattern, env_content, flags=re.MULTILINE):
+            env_content = re.sub(pattern, new_line, env_content, flags=re.MULTILINE)
+        else:
+            env_content += f'\n{new_line}'
+        # Update live env so /setup/status reflects immediately
+        os.environ[key] = value_str
+        updated_keys.append(key)
+        if key in _CONTAINER_RESTART_MAP:
+            containers_to_restart.add(_CONTAINER_RESTART_MAP[key])
+
+    env_path.write_text(env_content)
+    logger.info(f"setup/credentials: wrote {updated_keys}")
+
+    loop = asyncio.get_running_loop()
+    for container in containers_to_restart:
+        fut = loop.run_in_executor(None, _restart_container, container)
+        # Suppress "Future exception was never retrieved" if _restart_container
+        # raises — container restarts are best-effort, failures already logged
+        # inside _restart_container itself.
+        fut.add_done_callback(lambda f: f.exception())
+
+    return {"status": "saved", "keys_updated": updated_keys}

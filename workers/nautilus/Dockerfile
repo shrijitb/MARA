@@ -23,7 +23,16 @@ RUN apt-get update \
        g++ \
        make \
        libssl-dev \
+       pkg-config \
     && rm -rf /var/lib/apt/lists/*
+
+# Rust toolchain — required to build nautilus_trader from source when a
+# pre-built wheel is not available for this platform/Python combination.
+# On ARM64 (Raspberry Pi 5, Python 3.12), pre-built wheels exist as of
+# nautilus_trader >= 1.200 and this path is only hit as a fallback.
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+      | sh -s -- -y --default-toolchain stable --profile minimal
+ENV PATH="/root/.cargo/bin:$PATH"
 
 WORKDIR /app
 
@@ -38,10 +47,11 @@ RUN pip install --no-cache-dir \
     requests \
     pyyaml
 
-# nautilus_trader — best-effort. If ARM64 wheel is unavailable, the worker
-# starts in paper simulation mode without it. Do not fail the build.
+# nautilus_trader — best-effort.  Pre-built wheel tried first; source build
+# is the fallback (Rust toolchain above makes this work on any platform).
+# If the install still fails the worker starts in paper simulation mode.
 RUN pip install --no-cache-dir nautilus_trader \
-    || echo "WARNING: nautilus_trader wheel not found for this platform. Starting in paper simulation mode."
+    || echo "WARNING: nautilus_trader install failed. Starting in paper simulation mode."
 
 COPY . .
 

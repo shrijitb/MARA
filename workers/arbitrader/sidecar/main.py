@@ -1,37 +1,45 @@
 """
 workers/arbitrader/sidecar/main.py
 
-Arbitrader Python Sidecar — MARA Worker Adapter.
-FastAPI service on port 8004.
+NautilusTrader-based statistical arbitrage worker — FastAPI sidecar on port 8004.
 
-What this does:
-    Arbitrader is a Java cross-exchange price arbitrage engine
-    (github.com/agonyforge/arbitrader). It runs as a separate JVM process
-    and exposes its own REST/metrics interface.
-
-    This sidecar:
-      1. Manages the Arbitrader JVM process lifecycle (start/stop/health)
-      2. Reads Arbitrader's metrics (Prometheus endpoint or log scraping)
-      3. Translates them into MARA's worker REST contract
-      4. Receives regime signals and adjusts Arbitrader config if possible
-      5. In backtest/paper mode: runs without the JVM and simulates arb PnL
+Replaces the former Java Arbitrader + Python sidecar architecture.
+The JVM is no longer involved.  All arb detection and paper order management
+runs in pure Python / NautilusTrader.
 
 Strategy:
-    Cross-exchange price arbitrage (delta-neutral). Enters a long on the
-    cheaper exchange and a short on the more expensive. Makes money from
-    price convergence, not direction. Regime-agnostic but most productive
-    when funding rates and crypto volatility are high (WAR_PREMIUM, BULL_FROTHY).
+  Subscribes to trade ticks for two correlated OKX instruments (e.g.
+  BTC-USDT-SWAP and ETH-USDT-SWAP).  Tracks the rolling spread between
+  their mid-prices.  When the spread deviates > ARB_Z_THRESHOLD standard
+  deviations from its 60-tick rolling mean, a market-neutral pair trade
+  is submitted: long the cheap leg, short the expensive one.
+  Exit: spread reverts to within ARB_REVERT_Z of the mean.
 
-REST contract (full MARA standard + /allocate):
+Paper mode (default):
+  ArbitrageEngine skips NT startup if credentials are absent; the internal
+  paper arb simulator fires synthetic spread signals for testing.
+
+REST contract (full Arka standard):
     GET  /health
-    GET  /status     → pnl, sharpe, allocated_usd, open_positions, jvm_running
-    GET  /metrics
-    POST /allocate   → update Arbitrader position size limits
-    POST /regime     → adjust exposure multipliers
-    POST /signal     → return current arb spreads as signals
-    POST /execute    → force an arb check cycle
+    GET  /status     pnl, sharpe, allocated_usd, open_positions
+    GET  /metrics    Prometheus text (plain/text, not JSON)
+    POST /regime
+    POST /allocate
+    POST /signal
+    POST /execute
     POST /pause
     POST /resume
+
+Env vars:
+    OKX_API_KEY, OKX_API_SECRET, OKX_API_PASSPHRASE
+    PAPER_TRADING=true
+    ARB_LEG_A=BTC-USDT-SWAP.OKX
+    ARB_LEG_B=ETH-USDT-SWAP.OKX
+    ARB_Z_THRESHOLD=2.0      (z-score entry threshold)
+    ARB_REVERT_Z=0.5         (z-score exit threshold)
+    ARB_WINDOW=60            (rolling window in ticks)
+    ARB_ORDER_QTY_A=0.001
+    ARB_ORDER_QTY_B=0.01
 """
 
 from __future__ import annotations
@@ -40,62 +48,64 @@ import asyncio
 import logging
 import math
 import os
-import random
-import subprocess
 import time
 from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Optional
 
-import httpx
 import structlog
 from fastapi import FastAPI
 from fastapi.responses import Response
 
 logger = structlog.get_logger(__name__)
 
-WORKER_NAME  = "arbitrader"
-PAPER_TRADING = os.environ.get("MARA_LIVE", "false").lower() != "true"
+WORKER_NAME = "arbitrader"
 
-# ── Arbitrader JVM config ─────────────────────────────────────────────────────
-ARBITRADER_JAR   = os.environ.get("ARBITRADER_JAR", "/app/arbitrader.jar")
-ARBITRADER_PORT  = int(os.environ.get("ARBITRADER_PORT", "9090"))   # Arbitrader's own REST port
-JAVA_OPTS        = os.environ.get("JAVA_OPTS", "-Xmx400m -Xms128m")
-
-# ── Regime → exposure multiplier ──────────────────────────────────────────────
-# Arbitrader is delta-neutral so it's safe in most regimes.
-# Cut exposure in CRISIS_ACUTE (liquidity dries up, spreads blow out to unworkable levels).
-REGIME_MULTIPLIERS: Dict[str, float] = {
-    "WAR_PREMIUM":    1.0,   # Crypto volatility high — good spread opportunities
-    "CRISIS_ACUTE":   0.0,   # Pause — spreads blow out but so does slippage/liquidation risk
-    "BEAR_RECESSION": 0.7,
-    "BULL_FROTHY":    1.2,   # Leveraged longs → high funding divergence → best arb
-    "REGIME_CHANGE":  0.8,
-    "SHADOW_DRIFT":   0.9,
-    "BULL_CALM":      1.0,
+# ── Regime bias ───────────────────────────────────────────────────────────────
+REGIME_BIAS: Dict[str, str] = {
+    "RISK_ON":    "active",    # Normal arb exposure
+    "RISK_OFF":   "reduced",   # Smaller size
+    "CRISIS":     "flat",      # No new entries
+    "TRANSITION": "reduced",
 }
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Paper arb simulator
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _synthetic_spread(window: int = 60) -> float:
+    """Deterministic spread value for paper mode (changes each minute)."""
+    import hashlib
+    tick = int(time.time() // 60)
+    seed = int(hashlib.md5(f"arb{tick}".encode()).hexdigest()[:8], 16)
+    # Spread oscillates around 0, occasionally exceeds ±2σ
+    val  = (seed / 0xFFFFFFFF - 0.5) * 4.0   # range ~[-2, +2]
+    return val
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Worker state
+# ─────────────────────────────────────────────────────────────────────────────
+
 class ArbState:
     def __init__(self):
-        self.allocated_usd:   float  = 0.0
-        self.current_regime:  str    = "BULL_CALM"
-        self.multiplier:      float  = 1.0
-        self.paused:          bool   = False
-        self.jvm_process:     Optional[subprocess.Popen] = None
-        self.jvm_running:     bool   = False
-        self.jvm_error:       Optional[str] = None
-
-        # PnL tracking
-        self.realised_pnl:    float  = 0.0
-        self.open_positions:  int    = 0
-        self.trade_count:     int    = 0
-        self.win_count:       int    = 0
+        self.allocated_usd:   float = 0.0
+        self.paper_trading:   bool  = True
+        self.current_regime:  str   = "TRANSITION"
+        self.bias:            str   = "reduced"
+        self.paused:          bool  = False
+        self.open_positions:  int   = 0
+        self.realised_pnl:    float = 0.0
+        self.unrealised_pnl:  float = 0.0
+        self.trade_count:     int   = 0
+        self.win_count:       int   = 0
         self.returns_log:     List[float] = []
-        self.start_time:      float  = time.time()
-
-        # Paper sim state
-        self._sim_spread:     float  = 0.008   # Simulated 0.8% spread (Arbitrader default entry)
-        self._sim_last_check: float  = 0.0
+        self.engine_ready:    bool  = False
+        self.engine_error:    Optional[str] = None
+        self.start_time:      float = time.time()
+        # Active paper position: {"side": "long_a_short_b"|"short_a_long_b",
+        #                         "entry_spread": float, "size_usd": float}
+        self._paper_position: Optional[Dict] = None
 
     def sharpe(self) -> float:
         if len(self.returns_log) < 5:
@@ -108,7 +118,7 @@ class ArbState:
             return 0.0
         if std < 1e-12:
             return 0.0
-        return (mean / std) * math.sqrt(24 * 365)   # ~24 arb cycles per day
+        return (mean / std) * math.sqrt(252)
 
     def win_rate(self) -> float:
         return self.win_count / self.trade_count if self.trade_count > 0 else 0.0
@@ -116,164 +126,289 @@ class ArbState:
     def uptime(self) -> float:
         return time.time() - self.start_time
 
-    def is_healthy(self) -> bool:
-        if self.paused:
-            return True
-        if PAPER_TRADING:
-            return True   # Paper mode never needs JVM
-        return self.jvm_running
+    # ── Paper arb cycle ───────────────────────────────────────────────────────
 
-    # ── JVM Lifecycle ─────────────────────────────────────────────────────────
-
-    def start_jvm(self):
-        """
-        Start the Arbitrader JVM process.
-        Non-fatal: if JAR isn't present, logs warning and falls back to paper sim.
-        """
-        if not os.path.exists(ARBITRADER_JAR):
-            self.jvm_error = f"JAR not found: {ARBITRADER_JAR}"
-            logger.warning("arbitrader_jar_missing", path=ARBITRADER_JAR,
-                           fallback="paper simulation")
-            return
-
-        try:
-            cmd = ["java"] + JAVA_OPTS.split() + ["-jar", ARBITRADER_JAR]
-            self.jvm_process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-            )
-            time.sleep(3)   # Give JVM time to start
-            if self.jvm_process.poll() is not None:
-                self.jvm_error = f"JVM exited immediately (code {self.jvm_process.returncode})"
-                logger.error("arbitrader_jvm_crashed", **{"code": self.jvm_process.returncode})
-            else:
-                self.jvm_running = True
-                logger.info("arbitrader_jvm_started", pid=self.jvm_process.pid)
-        except FileNotFoundError:
-            self.jvm_error = "java not found in PATH"
-            logger.warning("arbitrader_java_missing", fallback="paper simulation")
-        except Exception as exc:
-            self.jvm_error = str(exc)
-            logger.error("arbitrader_jvm_start_failed", error=str(exc))
-
-    def stop_jvm(self):
-        if self.jvm_process and self.jvm_running:
-            self.jvm_process.terminate()
-            try:
-                self.jvm_process.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                self.jvm_process.kill()
-            self.jvm_running = False
-            logger.info("arbitrader_jvm_stopped")
-
-    def check_jvm_alive(self):
-        """Called each health check cycle."""
-        if self.jvm_process and self.jvm_process.poll() is not None:
-            self.jvm_running = False
-            self.jvm_error   = f"JVM exited (code {self.jvm_process.returncode})"
-            logger.error("arbitrader_jvm_died_unexpectedly")
-
-    # ── Arbitrader metrics scraping ───────────────────────────────────────────
-
-    async def fetch_jvm_metrics(self) -> Dict[str, Any]:
-        """
-        Pull metrics from Arbitrader's REST endpoint.
-        Returns empty dict on failure (sidecar still healthy, just no data).
-        """
-        try:
-            async with httpx.AsyncClient(timeout=3.0) as client:
-                resp = await client.get(f"http://localhost:{ARBITRADER_PORT}/actuator/health")
-                if resp.status_code == 200:
-                    return resp.json()
-        except Exception:
-            pass
-        return {}
-
-    # ── Paper simulation ──────────────────────────────────────────────────────
-
-    def paper_arb_cycle(self) -> Optional[Dict[str, Any]]:
-        """
-        Simulates one Arbitrader arb cycle.
-        Models realistic arb: entry spread 0.8%, exit spread 0.5%, fees ~0.08%.
-        Returns a simulated trade result or None (no opportunity this cycle).
-        """
-        if self.paused or self.multiplier == 0.0 or self.allocated_usd < 10.0:
+    async def run_paper_cycle(self) -> Optional[Dict[str, Any]]:
+        if self.paused or self.bias == "flat" or self.allocated_usd < 10.0:
             return None
 
-        now = time.time()
-        if now - self._sim_last_check < 300:   # Check every 5 minutes (realistic arb frequency)
-            return None
-        self._sim_last_check = now
+        z_entry  = float(os.environ.get("ARB_Z_THRESHOLD", "2.0"))
+        z_revert = float(os.environ.get("ARB_REVERT_Z",    "0.5"))
+        spread   = _synthetic_spread()
 
-        # Simulate spread observation — opportunities arrive stochastically
-        observed_spread = random.gauss(self._sim_spread, 0.003)
-        ENTRY_THRESHOLD = 0.008
-        if observed_spread < ENTRY_THRESHOLD:
-            return None   # No opportunity this cycle
+        # Exit existing position if spread has reverted
+        if self._paper_position is not None:
+            pos = self._paper_position
+            if abs(spread) < z_revert:
+                entry = pos["entry_spread"]
+                pnl   = pos["size_usd"] * abs(entry - spread) / max(abs(entry), 0.01)
+                if pos["side"] == "short_a_long_b" and entry < 0:
+                    pnl = -pnl
+                self.realised_pnl     += pnl
+                ret = pnl / pos["size_usd"]
+                self.returns_log.append(ret)
+                self.trade_count      += 1
+                if pnl > 0:
+                    self.win_count    += 1
+                self._paper_position   = None
+                self.open_positions    = 0
+                logger.info("arb_position_closed", spread=round(spread, 4),
+                            pnl=round(pnl, 4))
+                return {"action": "closed", "spread": spread, "pnl": round(pnl, 4)}
+            return None  # still in position, no new signal
 
-        # Simulate trade: fee-adjusted PnL
-        fees         = 0.0004 * 4   # 4 legs at 0.04% each
-        gross_profit = observed_spread - 0.005   # Exit at 0.5% convergence
-        net_profit_pct = gross_profit - fees
-        size_usd     = self.allocated_usd * 0.6 * self.multiplier
-        net_profit   = size_usd * net_profit_pct
+        # Enter if spread is extreme
+        if abs(spread) >= z_entry:
+            size_usd = self.allocated_usd * 0.5
+            side     = "long_a_short_b" if spread < 0 else "short_a_long_b"
+            self._paper_position = {
+                "side": side, "entry_spread": spread, "size_usd": size_usd,
+                "opened_at": time.time(),
+            }
+            self.open_positions = 1
+            logger.info("arb_position_opened", side=side,
+                        spread=round(spread, 4), size_usd=size_usd)
+            return {"action": "opened", "side": side, "spread": round(spread, 4),
+                    "size_usd": size_usd}
 
-        self.realised_pnl += net_profit
-        self.returns_log.append(net_profit_pct)
-        self.trade_count  += 1
-        if net_profit > 0:
-            self.win_count += 1
-
-        logger.info("paper_arb_trade", spread=round(observed_spread, 4),
-                    net_pct=round(net_profit_pct * 100, 3),
-                    size_usd=round(size_usd, 2),
-                    net_pnl=round(net_profit, 4))
-        return {
-            "action":       "arb_closed",
-            "gross_spread": round(observed_spread, 4),
-            "net_pnl":      round(net_profit, 4),
-            "size_usd":     round(size_usd, 2),
-        }
+        return None
 
 
 state = ArbState()
+_engine_task: Optional[asyncio.Task] = None
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ArbitrageEngine — NautilusTrader TradingNode lifecycle
+# ─────────────────────────────────────────────────────────────────────────────
+
+async def _run_nt_engine() -> None:
+    """
+    Start a NautilusTrader TradingNode for live pair arb on OKX.
+    Silently returns if credentials are missing or NT is not installed.
+    """
+    api_key    = os.environ.get("OKX_API_KEY",        "")
+    api_secret = os.environ.get("OKX_API_SECRET",     "")
+    passphrase = os.environ.get("OKX_API_PASSPHRASE", "")
+    paper      = os.environ.get("PAPER_TRADING",      "true").lower() == "true"
+
+    if not (api_key and api_secret and passphrase):
+        state.engine_error = "OKX credentials not set — paper arb simulator active"
+        logger.info("arbitrader_engine_skipped", reason="no_okx_credentials")
+        return
+
+    try:
+        from nautilus_trader.config import (
+            TradingNodeConfig,
+            LiveDataEngineConfig,
+            LiveExecEngineConfig,
+            StrategyConfig,
+        )
+        from nautilus_trader.live.node import TradingNode
+        from nautilus_trader.adapters.okx.config import (
+            OKXDataClientConfig,
+            OKXExecClientConfig,
+        )
+        from nautilus_trader.adapters.okx.factories import (
+            OKXLiveDataClientFactory,
+            OKXLiveExecClientFactory,
+        )
+        from nautilus_trader.trading.strategy import Strategy
+        from nautilus_trader.model.data import QuoteTick
+        from nautilus_trader.model.identifiers import InstrumentId
+        from nautilus_trader.model.enums import OrderSide
+        from nautilus_trader.model.objects import Quantity, Price
+    except ImportError as exc:
+        state.engine_error = f"nautilus_trader not installed: {exc}"
+        logger.warning("arbitrader_import_failed", error=str(exc))
+        return
+
+    leg_a = os.environ.get("ARB_LEG_A", "BTC-USDT-SWAP.OKX")
+    leg_b = os.environ.get("ARB_LEG_B", "ETH-USDT-SWAP.OKX")
+    z_thr = float(os.environ.get("ARB_Z_THRESHOLD", "2.0"))
+    z_rev = float(os.environ.get("ARB_REVERT_Z",    "0.5"))
+    win   = int(os.environ.get("ARB_WINDOW",         "60"))
+    qty_a = os.environ.get("ARB_ORDER_QTY_A", "0.001")
+    qty_b = os.environ.get("ARB_ORDER_QTY_B", "0.01")
+
+    # ── Define the pair-arb strategy ─────────────────────────────────────────
+    class PairArbConfig(StrategyConfig, frozen=True):
+        leg_a:          str   = leg_a
+        leg_b:          str   = leg_b
+        z_threshold:    float = z_thr
+        z_revert:       float = z_rev
+        window:         int   = win
+        order_qty_a:    str   = qty_a
+        order_qty_b:    str   = qty_b
+
+    class PairArbStrategy(Strategy):
+        """
+        Market-neutral pair arb on two OKX perp instruments.
+        Subscribes to quote ticks for both legs.  Maintains a rolling
+        spread buffer, z-scores it, and fires bracket trades on extremes.
+        """
+
+        def __init__(self, config: PairArbConfig):
+            super().__init__(config)
+            self._iid_a    = InstrumentId.from_str(config.leg_a)
+            self._iid_b    = InstrumentId.from_str(config.leg_b)
+            self._z        = config.z_threshold
+            self._z_rev    = config.z_revert
+            self._window   = config.window
+            self._qty_a    = Quantity.from_str(config.order_qty_a)
+            self._qty_b    = Quantity.from_str(config.order_qty_b)
+            self._spreads: List[float] = []
+            self._mid_a:   Optional[float] = None
+            self._mid_b:   Optional[float] = None
+            self._in_pos:  bool = False
+
+        def on_start(self) -> None:
+            self.subscribe_quote_ticks(self._iid_a)
+            self.subscribe_quote_ticks(self._iid_b)
+
+        def on_quote_tick(self, tick: QuoteTick) -> None:
+            mid = (float(tick.bid_price) + float(tick.ask_price)) / 2.0
+            if tick.instrument_id == self._iid_a:
+                self._mid_a = mid
+            elif tick.instrument_id == self._iid_b:
+                self._mid_b = mid
+
+            if self._mid_a is None or self._mid_b is None:
+                return
+
+            # Spread = log(A) - log(B)  (log ratio is stationary for correlated assets)
+            spread = math.log(self._mid_a) - math.log(self._mid_b)
+            self._spreads.append(spread)
+            if len(self._spreads) > self._window:
+                self._spreads.pop(0)
+
+            if len(self._spreads) < self._window:
+                return
+
+            mean  = sum(self._spreads) / len(self._spreads)
+            var   = sum((s - mean) ** 2 for s in self._spreads) / len(self._spreads)
+            # Skip when spread is effectively flat: using a 1e-6 sigma floor here
+            # would turn any tiny deviation into a multi-million z-score and fire a
+            # false arb entry.  Insufficient variance means no tradeable dislocation.
+            if var < 1e-12:
+                return
+            sigma = math.sqrt(var)
+            z     = (spread - mean) / sigma
+
+            if self._in_pos:
+                if abs(z) < self._z_rev:
+                    self.close_all_positions(self._iid_a)
+                    self.close_all_positions(self._iid_b)
+                    self._in_pos = False
+            else:
+                if z > self._z:    # A expensive vs B → short A, long B
+                    self._enter(OrderSide.SELL, OrderSide.BUY)
+                elif z < -self._z: # A cheap vs B → long A, short B
+                    self._enter(OrderSide.BUY, OrderSide.SELL)
+
+        def _enter(self, side_a: "OrderSide", side_b: "OrderSide") -> None:
+            try:
+                self.submit_order(self.order_factory.market(
+                    instrument_id=self._iid_a,
+                    order_side=side_a,
+                    quantity=self._qty_a,
+                ))
+                self.submit_order(self.order_factory.market(
+                    instrument_id=self._iid_b,
+                    order_side=side_b,
+                    quantity=self._qty_b,
+                ))
+                self._in_pos = True
+            except Exception as exc:
+                self.log.warning(f"pair arb entry failed: {exc}")
+
+        def on_stop(self) -> None:
+            self.cancel_all_orders(self._iid_a)
+            self.cancel_all_orders(self._iid_b)
+            self.close_all_positions(self._iid_a)
+            self.close_all_positions(self._iid_b)
+
+        def on_dispose(self) -> None:
+            pass
+
+    # ── Boot TradingNode ──────────────────────────────────────────────────────
+    try:
+        config = TradingNodeConfig(
+            trader_id="ARKA-ARB-001",
+            data_engine=LiveDataEngineConfig(qsize=10_000),
+            exec_engine=LiveExecEngineConfig(qsize=10_000),
+            data_clients={
+                "OKX": OKXDataClientConfig(
+                    api_key=api_key, api_secret=api_secret,
+                    passphrase=passphrase, is_demo=paper,
+                ),
+            },
+            exec_clients={
+                "OKX": OKXExecClientConfig(
+                    api_key=api_key, api_secret=api_secret,
+                    passphrase=passphrase, is_demo=paper,
+                ),
+            },
+        )
+        node = TradingNode(config=config)
+        node.add_data_client_factory("OKX", OKXLiveDataClientFactory)
+        node.add_exec_client_factory("OKX", OKXLiveExecClientFactory)
+        node.trader.add_strategy(PairArbStrategy(PairArbConfig()))
+        node.build()
+        state.engine_ready = True
+        logger.info("arbitrader_engine_started", leg_a=leg_a, leg_b=leg_b, paper=paper)
+        await node.run_async()
+    except Exception as exc:
+        state.engine_error = f"engine runtime error: {exc}"
+        logger.error("arbitrader_engine_error", error=str(exc))
+    finally:
+        state.engine_ready = False
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# App lifespan
+# ─────────────────────────────────────────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("arbitrader_sidecar_starting",
-                paper=PAPER_TRADING, jar=ARBITRADER_JAR)
-    if not PAPER_TRADING:
-        await asyncio.get_event_loop().run_in_executor(None, state.start_jvm)
-    else:
-        logger.info("arbitrader_paper_mode", note="JVM not started — paper simulation active")
+    global _engine_task
+    logger.info("arbitrader_worker_starting")
 
+    _engine_task = asyncio.create_task(_run_nt_engine(), name="arb-engine")
+    await asyncio.sleep(0.1)   # let engine detect missing credentials
+
+    logger.info("arbitrader_worker_ready",
+                engine_ready=state.engine_ready, engine_error=state.engine_error)
     yield
 
-    state.stop_jvm()
-    logger.info("arbitrader_sidecar_shutdown",
+    if _engine_task and not _engine_task.done():
+        _engine_task.cancel()
+        try:
+            await asyncio.wait_for(_engine_task, timeout=5.0)
+        except (asyncio.TimeoutError, asyncio.CancelledError, Exception):
+            pass
+
+    logger.info("arbitrader_worker_shutdown",
                 trades=state.trade_count, pnl=round(state.realised_pnl, 4))
 
 
 app = FastAPI(lifespan=lifespan)
 
 
-# ── REST Contract ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# REST Contract
+# ─────────────────────────────────────────────────────────────────────────────
 
 @app.get("/health")
 def health():
-    if not PAPER_TRADING:
-        state.check_jvm_alive()
     return {
-        "status":       "ok" if state.is_healthy() else "degraded",
-        "worker":       WORKER_NAME,
-        "paused":       state.paused,
-        "regime":       state.current_regime,
-        "jvm_running":  state.jvm_running,
-        "jvm_error":    state.jvm_error,
-        "paper_mode":   PAPER_TRADING,
+        "status":         "ok",
+        "worker":         WORKER_NAME,
+        "paused":         state.paused,
+        "regime":         state.current_regime,
+        "engine_ready":   state.engine_ready,
+        "engine_error":   state.engine_error,
+        "open_positions": state.open_positions,
     }
 
 
@@ -282,94 +417,74 @@ def status():
     return {
         "worker":         WORKER_NAME,
         "regime":         state.current_regime,
-        "multiplier":     state.multiplier,
         "paused":         state.paused,
         "allocated_usd":  round(state.allocated_usd, 2),
-        "pnl":            round(state.realised_pnl, 4),
+        "pnl":            round(state.realised_pnl + state.unrealised_pnl, 4),
+        "realised_pnl":   round(state.realised_pnl, 4),
+        "unrealised_pnl": round(state.unrealised_pnl, 4),
         "sharpe":         round(state.sharpe(), 3),
         "win_rate":       round(state.win_rate(), 3),
         "trade_count":    state.trade_count,
         "open_positions": state.open_positions,
-        "jvm_running":    state.jvm_running,
+        "engine_ready":   state.engine_ready,
         "uptime_s":       round(state.uptime(), 1),
     }
 
 
 @app.post("/allocate")
 async def allocate(body: dict):
-    """Receive capital allocation from Hypervisor."""
     amount = float(body.get("amount_usd", 0.0))
     paper  = bool(body.get("paper_trading", True))
-
     state.allocated_usd = amount
-    logger.info("capital_allocated", amount_usd=amount, paper=paper,
-                regime=state.current_regime, multiplier=state.multiplier)
-
-    # Trigger immediate paper arb check with fresh capital
-    result = state.paper_arb_cycle()
-    return {
-        "status":     "allocated",
-        "amount_usd": amount,
-        "arb_result": result,
-    }
+    state.paper_trading = paper
+    logger.info("arb_capital_allocated", amount_usd=amount, paper=paper)
+    if amount >= 10.0 and not state.paused:
+        result = await state.run_paper_cycle()
+        if result:
+            return {"status": "allocated_and_entered", "amount_usd": amount, "trade": result}
+    return {"status": "allocated", "amount_usd": amount}
 
 
 @app.post("/regime")
 async def update_regime(body: dict):
     new_regime = body.get("regime", state.current_regime)
-    old_regime = state.current_regime
-
     state.current_regime = new_regime
-    state.multiplier     = REGIME_MULTIPLIERS.get(new_regime, 1.0)
-
-    if state.multiplier == 0.0:
+    state.bias = REGIME_BIAS.get(new_regime, "reduced")
+    if new_regime == "CRISIS":
         state.paused = True
-        logger.warning("arbitrader_paused_by_regime", regime=new_regime)
-    elif state.paused and state.multiplier > 0:
-        state.paused = False
-        logger.info("arbitrader_auto_resumed", regime=new_regime)
-
-    logger.info("regime_updated", old=old_regime, new=new_regime, multiplier=state.multiplier)
-    return {
-        "status":     "updated",
-        "regime":     new_regime,
-        "multiplier": state.multiplier,
-    }
+    logger.info("arb_regime_updated", regime=new_regime, bias=state.bias)
+    return {"status": "updated", "regime": new_regime, "bias": state.bias}
 
 
 @app.post("/signal")
 async def signal(body: dict):
-    """Return current arb spread observation as a signal."""
-    if state.paused or state.multiplier == 0.0:
+    if state.paused or state.bias == "flat":
         return []
-
-    # Simulate current observed spread for reporting
-    observed = max(0.0, random.gauss(0.008, 0.003))
-    confidence = min(0.9, observed / 0.02)   # Higher spread = higher confidence
-
+    leg_a = os.environ.get("ARB_LEG_A", "BTC-USDT-SWAP.OKX")
+    leg_b = os.environ.get("ARB_LEG_B", "ETH-USDT-SWAP.OKX")
+    spread = _synthetic_spread()
+    z_thr  = float(os.environ.get("ARB_Z_THRESHOLD", "2.0"))
+    if abs(spread) < z_thr:
+        return []
+    side = "long_a_short_b" if spread < 0 else "short_a_long_b"
     return [{
         "worker":             WORKER_NAME,
-        "symbol":             "CROSS_EXCHANGE_ARB",
-        "direction":          "market_neutral",
-        "confidence":         round(confidence, 3),
-        "suggested_size_pct": 0.6 * state.multiplier,
+        "symbol":             f"{leg_a}|{leg_b}",
+        "direction":          side,
+        "confidence":         min(0.95, abs(spread) / (z_thr * 2)),
+        "suggested_size_pct": 0.5,
         "regime_tags":        [state.current_regime],
-        "ttl_seconds":        300,
-        "rationale": (
-            f"Cross-exchange price arb | observed_spread={observed:.4f} | "
-            f"regime={state.current_regime} | multiplier={state.multiplier}"
-        ),
+        "ttl_seconds":        60,
+        "rationale":          f"pair arb z={spread:.2f} threshold={z_thr}",
     }]
 
 
 @app.post("/execute")
 async def execute(body: dict):
-    """Force an arb check cycle."""
     if state.paused:
         return {"status": "paused", "executed": False}
-    state._sim_last_check = 0.0   # Reset throttle so it runs immediately
-    result = state.paper_arb_cycle()
-    return {"status": "executed", "result": result}
+    result = await state.run_paper_cycle()
+    return {"status": "executed" if result else "no_signal", "result": result}
 
 
 @app.post("/pause")
@@ -381,8 +496,6 @@ def pause():
 
 @app.post("/resume")
 def resume():
-    if state.multiplier == 0.0:
-        return {"status": "blocked", "reason": "regime forces pause (CRISIS_ACUTE)"}
     state.paused = False
     logger.info("arbitrader_resumed")
     return {"status": "resumed"}
@@ -390,13 +503,13 @@ def resume():
 
 @app.get("/metrics")
 def metrics():
-    active = 0 if (state.paused or state.multiplier == 0.0) else 1
+    active  = 0 if state.paused else 1
     content = (
-        f'mara_worker_active{{worker="arbitrader"}} {active}\n'
+        f'arka_worker_active{{worker="{WORKER_NAME}"}} {active}\n'
         f'mara_arbitrader_pnl_usd {state.realised_pnl:.4f}\n'
+        f'mara_arbitrader_open_positions {state.open_positions}\n'
         f'mara_arbitrader_trade_count {state.trade_count}\n'
         f'mara_arbitrader_sharpe {state.sharpe():.4f}\n'
-        f'mara_arbitrader_win_rate {state.win_rate():.4f}\n'
-        f'mara_arbitrader_jvm_running {1 if state.jvm_running else 0}\n'
+        f'mara_arbitrader_engine_ready {1 if state.engine_ready else 0}\n'
     )
     return Response(content=content, media_type="text/plain")

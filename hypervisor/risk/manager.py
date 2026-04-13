@@ -229,11 +229,12 @@ class RiskManager:
     def summary(self, total_capital: float, free_capital: float) -> str:
         dd = self._portfolio_drawdown(total_capital)
         pnl = total_capital - self._initial_capital
+        free_pct = f"{free_capital / total_capital * 100:.0f}%" if total_capital > 0 else "N/A"
         lines = [
             f"RiskManager | Capital: ${total_capital:.2f} "
             f"(peak ${self._peak_capital:.2f}) | "
             f"Drawdown: {dd*100:.1f}% | P&L: ${pnl:+.2f} | "
-            f"Free: ${free_capital:.2f} ({free_capital/total_capital*100:.0f}%)"
+            f"Free: ${free_capital:.2f} ({free_pct})"
         ]
         for worker, state in self._worker_states.items():
             lines.append(

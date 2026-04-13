@@ -1,5 +1,5 @@
 """
-MARA Data Layer — data/feeds/market_data.py
+Arka Data Layer — data/feeds/market_data.py
 
 Single source of truth for all market data in the system.
 All workers and the hypervisor import from here — never directly from yfinance/ccxt/etc.
@@ -8,14 +8,13 @@ Free sources only:
   - yfinance           : ETFs, equities, VIX, DXY, commodity futures
   - pandas_datareader  : BDI via stooq.com (yfinance ^BDI is delisted)
   - fredapi            : macro data (yield curve, CPI, unemployment)
-  - ccxt               : crypto OHLCV via Bybit (Binance is US geo-blocked)
+  - ccxt               : crypto OHLCV via Kraken (Binance/Bybit CloudFront-blocked in US)
   - requests           : OKX funding rates (public REST, no auth)
-  - conflict_index     : composite War Premium Score (ACLED + GDELT + market proxy)
+  - conflict_index     : composite War Premium Score (GDELT + market proxy)
 
 Known limitations:
   - BDI proxy via BDRY ETF (^BDI delisted from yfinance)
   - OKX used for crypto (Binance/Bybit CloudFront-blocked in US)
-  - ACLED optional — system works without it, score less precise
 """
 
 from __future__ import annotations
@@ -255,7 +254,7 @@ def get_etf_price(ticker: str) -> float:
 def get_defense_momentum(window: int = 20) -> float:
     """
     Average 20-day price momentum across defense ETFs.
-    Positive + rising = WAR_PREMIUM regime signal.
+    Positive + rising = RISK_ON / conflict escalation signal.
     """
     scores = []
     for t in ETF_GROUPS["defense"]:
@@ -317,8 +316,8 @@ def get_crypto_funding_rate(symbol: str = "BTC-USDT-SWAP") -> float:
     Symbol format for OKX: BTC-USDT-SWAP, ETH-USDT-SWAP, SOL-USDT-SWAP.
     No authentication required.
 
-    Positive (>0.0003) = euphoria / overleveraged longs = BULL_FROTHY.
-    Negative (<-0.0001) = fear / forced shorts = BEAR_RECESSION.
+    Positive (>0.0003) = euphoria / overleveraged longs = RISK_ON extreme.
+    Negative (<-0.0001) = fear / forced shorts = RISK_OFF / CRISIS.
     """
     def _fetch():
         url = f"https://www.okx.com/api/v5/public/funding-rate?instId={symbol}"
@@ -376,8 +375,8 @@ def get_macro_snapshot() -> dict:
     Returns all regime classification inputs in one dict.
     Hypervisor calls this every heartbeat.
     Each value is fetched with caching — actual HTTP calls only happen when cache expires.
-    war_premium_score replaces the old gdelt_war_score — it is a composite 0-100
-    score from conflict_index.py combining ACLED + GDELT + market proxy.
+    war_premium_score is a composite 0-100 score from conflict_index.py
+    combining GDELT + market proxy.
     """
     # Lazy import to avoid circular dependency at module load time
     from data.feeds.conflict_index import get_war_premium_score
@@ -422,7 +421,7 @@ def get_macro_snapshot() -> dict:
 
 if __name__ == "__main__":
     print("\n" + "="*60)
-    print("MARA DATA LAYER — VERIFICATION")
+    print("ARKA DATA LAYER — VERIFICATION")
     print("="*60)
 
     tests = {

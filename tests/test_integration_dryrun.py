@@ -1,7 +1,7 @@
 """
 tests/test_integration_dryrun.py
 
-MARA Integration Dry-Run Test Suite.
+Arka Integration Dry-Run Test Suite.
 
 PURPOSE
 -------
@@ -118,11 +118,16 @@ def _make_client(worker_name: str, rel_path: str):
 
 
 # ── Worker source paths (relative to ~/mara) ─────────────────────────────────
+# All workers registered in WORKER_REGISTRY must appear here so REST contract
+# regressions are caught in-process before they reach Docker runtime.
+# arbitrader: structlog present in venv; nautilus_trader absent → NTengine skips
+#             gracefully, REST layer is fully exercised.
 WORKER_PATHS = {
-    "nautilus":   "workers/nautilus/worker_api.py",
-    "arbitrader": "workers/arbitrader/sidecar/main.py",
-    "autohedge":  "workers/autohedge/worker_api.py",
-    "polymarket": "workers/polymarket/adapter/main.py",
+    "nautilus":             "workers/nautilus/worker_api.py",
+    "analyst":              "workers/analyst/worker_api.py",
+    "prediction_markets":   "workers/prediction_markets/worker_api.py",
+    "core_dividends":       "workers/core_dividends/worker_api.py",
+    "arbitrader":           "workers/arbitrader/sidecar/main.py",
 }
 
 # Fields hypervisor reads in _pull_worker_status() — any missing silently → 0.0
@@ -135,7 +140,7 @@ REQUIRED_SIGNAL_FIELDS = {"worker", "symbol", "direction", "confidence",
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 1. Worker REST Contract
-#    Parametrised over all 4 workers. Each test runs 4 times.
+#    Parametrised over all workers in WORKER_PATHS.
 # ═════════════════════════════════════════════════════════════════════════════
 
 @pytest.fixture(params=list(WORKER_PATHS.items()), ids=list(WORKER_PATHS.keys()))
@@ -155,7 +160,7 @@ class TestWorkerContract:
     Missing /status fields    → add the field name to /status response dict
     422 Unprocessable Entity  → body schema mismatch on /allocate or /regime
     paused=True after resume  → worker forced paused by regime bias; check REGIME_BIAS
-    mara_worker_active absent → add gauge to /metrics response
+    arka_worker_active absent → add gauge to /metrics response
     """
 
     def test_health_returns_200_with_status_key(self, worker_client):
@@ -202,7 +207,7 @@ class TestWorkerContract:
 
     def test_regime_broadcast_accepted_for_all_regimes(self, worker_client):
         name, c = worker_client
-        regimes = ["WAR_PREMIUM", "CRISIS_ACUTE", "BULL_FROTHY", "BULL_CALM"]
+        regimes = ["RISK_ON", "RISK_OFF", "CRISIS", "TRANSITION"]
         for regime in regimes:
             resp = c.post("/regime", json={
                 "regime": regime, "confidence": 0.8, "paper_trading": True
@@ -217,7 +222,7 @@ class TestWorkerContract:
     def test_pause_sets_health_paused_true(self, worker_client):
         name, c = worker_client
         # Reset to known state first
-        c.post("/regime", json={"regime": "BULL_CALM", "confidence": 1.0})
+        c.post("/regime", json={"regime": "RISK_ON", "confidence": 1.0})
         c.post("/resume")
         resp = c.post("/pause")
         assert resp.status_code == 200, f"{name} /pause → HTTP {resp.status_code}"
@@ -232,7 +237,7 @@ class TestWorkerContract:
 
     def test_resume_clears_health_paused_flag(self, worker_client):
         name, c = worker_client
-        c.post("/regime", json={"regime": "BULL_CALM", "confidence": 1.0})
+        c.post("/regime", json={"regime": "RISK_ON", "confidence": 1.0})
         c.post("/pause")
         resp = c.post("/resume")
         assert resp.status_code == 200, f"{name} /resume → HTTP {resp.status_code}"
@@ -241,18 +246,18 @@ class TestWorkerContract:
         assert paused is False, (
             f"{name} /health['paused'] should be False after POST /resume\n"
             f"  got paused={paused!r}\n"
-            f"  If worker stays paused: check that REGIME_BIAS['BULL_CALM'] != 'flat'\n"
+            f"  If worker stays paused: check that REGIME_BIAS['RISK_ON'] != 'flat'\n"
             f"  full /health: {health}"
         )
         print(f"\n  [{name}] paused=False confirmed after /resume")
 
-    def test_metrics_contains_mara_worker_active_gauge(self, worker_client):
+    def test_metrics_contains_arka_worker_active_gauge(self, worker_client):
         name, c = worker_client
         resp = c.get("/metrics")
         assert resp.status_code == 200, \
             f"{name} GET /metrics → HTTP {resp.status_code}"
         body = resp.text
-        expected_gauge = f'mara_worker_active{{worker="{name}"}}'
+        expected_gauge = f'arka_worker_active{{worker="{name}"}}'
         assert expected_gauge in body, (
             f"{name} /metrics missing required Prometheus gauge\n"
             f"  expected to find: {expected_gauge}\n"
@@ -272,10 +277,7 @@ def allocator():
     return mod.RegimeAllocator(total_capital=200.0)
 
 
-ALL_REGIMES = [
-    "WAR_PREMIUM", "CRISIS_ACUTE", "BEAR_RECESSION",
-    "BULL_FROTHY", "REGIME_CHANGE", "SHADOW_DRIFT", "BULL_CALM",
-]
+ALL_REGIMES = ["RISK_ON", "RISK_OFF", "CRISIS", "TRANSITION"]
 
 
 class TestCapitalAllocator:
@@ -313,7 +315,7 @@ class TestCapitalAllocator:
             pytest.skip(f"Module load skipped: {exc}")
 
         profile_keys  = set()
-        for profile in cap_mod.REGIME_PROFILES.values():
+        for profile in cap_mod.ALLOCATION_PROFILES.values():
             profile_keys.update(profile.keys())
         registry_keys = set(hyp_mod.WORKER_REGISTRY.keys())
 
@@ -324,7 +326,7 @@ class TestCapitalAllocator:
             f"capital.py references workers not in WORKER_REGISTRY: {sorted(orphan_in_capital)}\n"
             f"  capital keys: {sorted(profile_keys)}\n"
             f"  registry keys: {sorted(registry_keys)}\n"
-            f"  FIX: rename or remove orphan keys from REGIME_PROFILES in capital.py"
+            f"  FIX: rename or remove orphan keys from ALLOCATION_PROFILES in capital.py"
         )
         if orphan_in_registry:
             print(f"\n  WARNING: registry workers without capital profile: {sorted(orphan_in_registry)}")
@@ -332,9 +334,9 @@ class TestCapitalAllocator:
 
     def test_unhealthy_worker_receives_zero_allocation(self, allocator):
         result = allocator.compute(
-            regime="BULL_CALM",
-            worker_health={"nautilus": False, "arbitrader": True,
-                           "polymarket": True,  "autohedge":  True},
+            regime="RISK_ON",
+            worker_health={"nautilus": False, "prediction_markets": True,
+                           "analyst": True, "core_dividends": True},
         )
         alloc = result.allocations.get("nautilus", "KEY_ABSENT")
         assert "nautilus" not in result.allocations, (
@@ -350,9 +352,9 @@ class TestCapitalAllocator:
         print(f"\n  nautilus excluded correctly. skipped={result.skipped_workers}")
 
     def test_low_sharpe_reduces_allocation(self, allocator):
-        baseline  = allocator.compute(regime="BULL_CALM")
+        baseline  = allocator.compute(regime="RISK_ON")
         penalised = allocator.compute(
-            regime="BULL_CALM",
+            regime="RISK_ON",
             worker_sharpe={"nautilus": 0.7},   # Below SHARPE_FULL_WEIGHT threshold
         )
         base_amt = baseline.allocations.get("nautilus", 0)
@@ -373,21 +375,20 @@ class TestCapitalAllocator:
         manager's per-worker cap and halting the system on every cold start.
         """
         result = allocator.compute(
-            regime="BULL_CALM",
+            regime="RISK_ON",
             worker_health={
-                "nautilus": False, "polymarket": False,
-                "arbitrader": False, "core_dividends": False,
-                "autohedge": True,
+                "nautilus": False, "prediction_markets": False,
+                "core_dividends": False, "analyst": True,
             },
         )
-        alloc = result.allocations.get("autohedge", 0)
+        alloc = result.allocations.get("analyst", 0)
         assert alloc <= 100.0, (
-            f"Single healthy worker (autohedge) received ${alloc:.2f} "
+            f"Single healthy worker (analyst) received ${alloc:.2f} "
             f"which exceeds 50% ($100) of $200 capital.\n"
             f"  full allocations: {result.allocations}\n"
             f"  FIX: normalise against profile_nonzero_sum, not eligible sum"
         )
-        print(f"\n  Single-worker startup: autohedge=${alloc:.2f} (limit=$100.00)")
+        print(f"\n  Single-worker startup: analyst=${alloc:.2f} (limit=$100.00)")
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -496,35 +497,35 @@ class TestRiskManagerIntegration:
         print(f"\n  Trim worker: {verdict.reason}  affected={verdict.affected_worker}")
 
     def test_per_worker_drawdown_triggers_halt_worker(self, rm):
-        rm.record_worker_allocation("arbitrader", 90.0)   # sets peak=$90
+        rm.record_worker_allocation("nautilus", 90.0)   # sets peak=$90
         # PnL of -$30 on $90 peak → 33% drawdown > WORKER_MAX_DRAWDOWN_PCT(30%)
         verdict = rm.assess(
             total_capital=200.0, free_capital=60.0, open_positions=2,
-            worker_pnl={"arbitrader": -30.0},
-            worker_allocated={"arbitrader": 60.0},
+            worker_pnl={"nautilus": -30.0},
+            worker_allocated={"nautilus": 60.0},
         )
         assert not verdict.safe, (
-            f"arbitrader 33% worker drawdown > WORKER_MAX_DRAWDOWN_PCT(30%) should fail\n"
+            f"nautilus 33% worker drawdown > WORKER_MAX_DRAWDOWN_PCT(30%) should fail\n"
             f"  Got safe=True"
         )
         assert verdict.action == "halt_worker", \
             f"Expected 'halt_worker', got: {verdict.action!r}"
-        assert verdict.affected_worker == "arbitrader", \
-            f"Expected 'arbitrader', got: {verdict.affected_worker!r}"
+        assert verdict.affected_worker == "nautilus", \
+            f"Expected 'nautilus', got: {verdict.affected_worker!r}"
         print(f"\n  Worker halt: {verdict.reason}  affected={verdict.affected_worker}")
 
     def test_reallocation_down_does_not_trigger_false_drawdown(self, rm):
         """Regression: when more workers join mid-run, hypervisor re-allocates each
         worker with a lower amount.  record_worker_allocation() must reset the peak
         so the reduction doesn't appear as a drawdown and halt the system."""
-        # Cycle 1: only autohedge healthy, gets $60
-        rm.record_worker_allocation("autohedge", 60.0)
-        # Cycle 2: all workers join, autohedge scaled down to $19.2
-        rm.record_worker_allocation("autohedge", 19.2)
+        # Cycle 1: only analyst healthy, gets $60
+        rm.record_worker_allocation("analyst", 60.0)
+        # Cycle 2: all workers join, analyst scaled down to $19.2
+        rm.record_worker_allocation("analyst", 19.2)
         verdict = rm.assess(
             total_capital=200.0, free_capital=40.0, open_positions=0,
-            worker_pnl={"autohedge": 0.0},
-            worker_allocated={"autohedge": 19.2},
+            worker_pnl={"analyst": 0.0},
+            worker_allocated={"analyst": 19.2},
         )
         assert verdict.safe, (
             f"Re-allocation from $60→$19.2 (more workers joining) should NOT "
@@ -563,12 +564,12 @@ class TestHypervisorCycle:
 
         registry_keys = set(hyp.WORKER_REGISTRY.keys())
         profile_keys  = set()
-        for profile in cap.REGIME_PROFILES.values():
+        for profile in cap.ALLOCATION_PROFILES.values():
             profile_keys.update(profile.keys())
 
         orphans = profile_keys - registry_keys
         assert not orphans, (
-            f"capital.py REGIME_PROFILES has worker keys absent from WORKER_REGISTRY: {sorted(orphans)}\n"
+            f"capital.py ALLOCATION_PROFILES has worker keys absent from WORKER_REGISTRY: {sorted(orphans)}\n"
             f"  capital.py keys: {sorted(profile_keys)}\n"
             f"  WORKER_REGISTRY keys: {sorted(registry_keys)}\n"
             f"  FIX: rename orphan keys in capital.py to match WORKER_REGISTRY"
@@ -582,8 +583,8 @@ class TestHypervisorCycle:
         orig_paper             = hyp.PAPER_TRADING
         hyp.PAPER_TRADING      = False
         hyp.INITIAL_CAPITAL_USD = 200.0
-        hyp.state.worker_pnl   = {"nautilus": 5.0, "arbitrader": -2.0}
-        hyp.state.allocations  = {"nautilus": 80.0, "arbitrader": 60.0}
+        hyp.state.worker_pnl   = {"nautilus": 5.0, "analyst": -2.0}
+        hyp.state.allocations  = {"nautilus": 80.0, "analyst": 60.0}
 
         hyp._reconcile_capital()
 
@@ -607,10 +608,10 @@ class TestHypervisorCycle:
 
     def test_open_position_count_sums_across_workers(self, hyp):
         hyp.state.worker_status = {
-            "nautilus":   {"open_positions": 2},
-            "arbitrader": {"open_positions": 1},
-            "polymarket": {"open_positions": 0},
-            "autohedge":  {},    # Missing key — must default to 0, not KeyError
+            "nautilus":           {"open_positions": 2},
+            "prediction_markets": {"open_positions": 1},
+            "core_dividends":     {"open_positions": 0},
+            "analyst":            {},    # Missing key — must default to 0, not KeyError
         }
         count = hyp._count_open_positions()
         assert count == 3, (
@@ -640,11 +641,11 @@ class TestHypervisorCycle:
         assert hasattr(result, "confidence"), \
             f"RegimeResult missing .confidence attribute"
 
-        valid = {"WAR_PREMIUM", "CRISIS_ACUTE", "BEAR_RECESSION",
-                 "BULL_FROTHY", "REGIME_CHANGE", "SHADOW_DRIFT", "BULL_CALM"}
+        # 4-state HMM labels (replaced the old 7-regime threshold system)
+        valid = {"RISK_ON", "RISK_OFF", "CRISIS", "TRANSITION"}
         regime_val = result.regime.value
         assert regime_val in valid, \
-            f"Unknown regime: {regime_val!r}\n  Valid set: {valid}"
+            f"Unknown regime: {regime_val!r}\n  Valid 4-state HMM labels: {valid}"
         assert 0.0 <= result.confidence <= 1.0, \
             f"Confidence {result.confidence} outside [0.0, 1.0]"
 
@@ -657,9 +658,8 @@ class TestHypervisorCycle:
 # ═════════════════════════════════════════════════════════════════════════════
 
 SIGNAL_WORKER_PATHS = {
-    "nautilus":   "workers/nautilus/worker_api.py",
-    "arbitrader": "workers/arbitrader/sidecar/main.py",
-    "autohedge":  "workers/autohedge/worker_api.py",
+    "nautilus": "workers/nautilus/worker_api.py",
+    "analyst":  "workers/analyst/worker_api.py",
 }
 
 
@@ -672,7 +672,7 @@ def signal_client(request):
     c = _make_client(name, path)
     # Prime: capital + safe regime so signals can fire
     c.post("/allocate", json={"amount_usd": 100.0, "paper_trading": True})
-    c.post("/regime",   json={"regime": "BULL_CALM", "confidence": 0.7, "paper_trading": True})
+    c.post("/regime",   json={"regime": "RISK_ON", "confidence": 0.7, "paper_trading": True})
     c.post("/resume")
     return name, c
 
@@ -685,12 +685,12 @@ class TestEndToEndSignalSchema:
     Not a list               → /signal must return a JSON array (even if empty)
     Missing signal field     → add field to /signal response dict in that worker
     confidence out of range  → must be float in [0.0, 1.0]
-    autohedge status wrong   → POST /execute must always return {"status": "advisory_only"}
+    analyst status wrong     → POST /execute must always return {"status": "advisory_only"}
     """
 
     def test_signal_response_is_a_list(self, signal_client):
         name, c = signal_client
-        resp = c.post("/signal", json={"regime": "BULL_CALM"})
+        resp = c.post("/signal", json={"regime": "RISK_ON"})
         assert resp.status_code == 200, (
             f"{name} POST /signal → HTTP {resp.status_code}\n"
             f"  body: {resp.text[:300]}"
@@ -705,7 +705,7 @@ class TestEndToEndSignalSchema:
 
     def test_each_signal_contains_required_fields(self, signal_client):
         name, c = signal_client
-        signals = c.post("/signal", json={"regime": "BULL_CALM"}).json()
+        signals = c.post("/signal", json={"regime": "RISK_ON"}).json()
         if not isinstance(signals, list) or not signals:
             pytest.skip(f"{name}: no signals returned — no open positions to validate")
 
@@ -722,16 +722,16 @@ class TestEndToEndSignalSchema:
             )
         print(f"\n  [{name}] signal fields OK: {sorted(signals[0].keys())}")
 
-    def test_autohedge_execute_always_advisory_only(self):
-        """AutoHedge must never execute a trade — always returns advisory_only status."""
-        c = _make_client("autohedge", "workers/autohedge/worker_api.py")
+    def test_analyst_execute_always_advisory_only(self):
+        """Analyst must never execute a trade — always returns advisory_only status."""
+        c = _make_client("analyst", "workers/analyst/worker_api.py")
         resp = c.post("/execute", json={"ticker": "BTC/USDT", "action": "buy"})
         assert resp.status_code == 200, \
-            f"autohedge POST /execute → HTTP {resp.status_code}\n  body: {resp.text[:300]}"
+            f"analyst POST /execute → HTTP {resp.status_code}\n  body: {resp.text[:300]}"
         body = resp.json()
         assert body.get("status") == "advisory_only", (
-            f"AutoHedge /execute must return {{\"status\": \"advisory_only\"}}\n"
+            f"Analyst /execute must return {{\"status\": \"advisory_only\"}}\n"
             f"  got: {body}\n"
-            f"  FIX: POST /execute in autohedge/worker_api.py must always set status='advisory_only'"
+            f"  FIX: POST /execute in analyst/worker_api.py must always set status='advisory_only'"
         )
-        print(f"\n  [autohedge] /execute correctly advisory_only: {body}")
+        print(f"\n  [analyst] /execute correctly advisory_only: {body}")

@@ -2,7 +2,7 @@
 
 An open-source, autonomous trading system for turbulent macro environments. MARA coordinates specialized AI agents across crypto, futures, commodities, and prediction markets using dynamic regime-aware capital allocation.
 
-**Status**: Paper trading active (March 2026) | WAR_PREMIUM regime, 80% confidence | **License**: LGPL-3.0
+**Status**: Paper trading active (April 2026) | WAR_PREMIUM regime, 80% confidence | **License**: LGPL-3.0
 
 ---
 
@@ -14,8 +14,10 @@ cd mara && python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env   # fill in credentials — never commit .env
 docker compose up -d
-curl -s http://localhost:8000/status | python3 -m json.tool
 ```
+
+- **Dashboard (Arka UI)**: http://localhost:3000 — guided setup wizard on first run
+- **Hypervisor API**: `curl -s http://localhost:8000/status | python3 -m json.tool`
 
 → Full setup per OS (Windows 11 / Ubuntu 24.04 / macOS): [Setup](#setup)
 
@@ -27,6 +29,7 @@ curl -s http://localhost:8000/status | python3 -m json.tool
 - [Architecture](#architecture)
 - [Regime-Gated Capital Allocation](#regime-gated-capital-allocation)
 - [Conflict Index](#conflict-index)
+- [Dashboard](#dashboard)
 - [Setup](#setup)
   - [Windows 11](#windows-11)
   - [Ubuntu 24.04](#ubuntu-2404)
@@ -165,6 +168,59 @@ A 0–100 war premium score that is the primary input to `WAR_PREMIUM` classific
 - **BDI proxy**: `BDRY` ETF — `^BDI` delisted from yfinance
 - **Gold/oil ratio threshold**: 45.0 — gold near $5,000 puts the ratio at ~57 baseline; old threshold of 20 false-triggered WAR_PREMIUM in peacetime commodity bull markets
 - **Market proxy at 70–75%**: ensures no single geopolitical data source can unilaterally trigger a regime change
+
+---
+
+## Dashboard
+
+**Arka** is the beginner-friendly visual interface for MARA. It runs as a separate Docker container on port 3000 and translates every data point into plain English and visual metaphors.
+
+### What it looks like
+
+- **Regime Mood** — weather icon (☀️ calm / ⛅ risk-off / 🌧 bear / ⛈ crisis) with animated stacked probability bars
+- **Risk Meter** — SVG semicircular gauge (green/amber/red) updated every 10 seconds
+- **Worker Stories** — character cards showing each agent's activity in plain English, with a pause modal for manual intervention
+- **Money Flow** — animated allocation bars showing how capital is distributed across workers in real time
+- **Domain Intelligence** — OSINT entry/exit signals color-coded by action (green = enter, red = exit, amber = watch)
+- **Analyst Pipeline** — Director / Quant / Risk three-stage trade thesis review
+
+### Setup wizard
+
+On first run (before credentials are saved), Arka shows a 6-step guided wizard:
+
+1. **Welcome** — overview of what Arka does
+2. **Device** — detects Pi vs. laptop, shows hardware profile
+3. **Exchange** — OKX API keys (optional — paper trading works without them)
+4. **Data Sources** — FRED, NASA FIRMS, AISstream, UCDP, Kalshi (all optional)
+5. **Notifications** — Telegram bot token + User ID, or ntfy.sh topic
+6. **Review & Launch** — checklist of configured services, one-click launch
+
+### Build
+
+```bash
+docker compose build dashboard
+docker compose up -d
+# http://localhost:3000
+```
+
+### Dev mode (live reload against local hypervisor)
+
+```bash
+cd dashboard
+npm install
+npm run dev
+# Vite dev server on :5173, /api proxied to localhost:8000
+```
+
+### Stack
+
+| Layer | Tech |
+|-------|------|
+| Framework | React 18 with functional components + hooks |
+| Build | Vite 5 |
+| Styles | Tailwind CSS v4 (`@tailwindcss/vite`, no config file) |
+| Serve | nginx:alpine on port 3000 |
+| Data | `useArkaData` hook polls `/api/dashboard/state` + `/api/setup/status` every 10s |
 
 ---
 
@@ -442,7 +498,7 @@ curl -s http://localhost:8000/status | python3 -m json.tool
 
 ```bash
 ~/mara/.venv/bin/python -m pytest tests/ -v
-# Expected: 86 passed, 19 skipped, 0 failed
+# Expected: 120+ passed, 7 skipped, 0 failed
 ```
 
 ### Test breakdown
@@ -456,6 +512,9 @@ curl -s http://localhost:8000/status | python3 -m json.tool
 | `TestEndToEndSignalSchema` | signal format, `advisory_only` enforcement | 4/6 pass, 2 skip |
 | `TestAcledIntegration` | token acquisition, CAST, live events | 1 pass, 2 skip (free tier) |
 | `TestGdeltIntegration` | GDELT query, conflict scoring | 3/3 pass |
+| `TestAdxCalculator` | trending/ranging/ambiguous classification, value range | 5/5 pass |
+| `TestRangeMeanRevertStrategy` | dead-market filter, insufficient bars, signal structure | 4/4 pass |
+| `TestStrategyRouter` | swing-forced mode, auto default, `/strategy` runtime override | 3/3 pass |
 
 ### Expected skips
 
@@ -541,6 +600,7 @@ The `RiskManager` enforces these limits every cycle. A breach triggers a 1-hour 
 | F-07 | AutoHedge sentiment multiplier (1.1×/0.5×) | Parked | High complexity; wait for F-05 stable |
 | F-08 | AutoHedge + GDELT dynamic watchlist | Parked | High complexity |
 | F-09 | NautilusTrader full backtest harness | Parked | After 4+ weeks paper trading data |
+| F-10 | Arka Visual Dashboard | Done | React 18 + Tailwind v4 at `dashboard/` |
 
 ---
 
@@ -740,11 +800,38 @@ mara/
 │   ├── settings.yaml
 │   ├── regimes.yaml                     # Classifier thresholds (recalibrated March 2026)
 │   └── allocations.yaml                 # Weight documentation (mirrors capital.py)
+├── dashboard/                           # Arka Visual Dashboard
+│   ├── Dockerfile                       # node:20-alpine build + nginx:alpine serve
+│   ├── nginx.conf                       # port 3000, /api/ → hypervisor:8000
+│   ├── package.json                     # React 18, Vite 5, Tailwind v4
+│   ├── vite.config.js
+│   └── src/
+│       ├── App.jsx                      # SetupWizard ↔ Dashboard routing
+│       ├── hooks/useArkaData.js          # 10s polling hook
+│       ├── styles/global.css            # Tailwind v4 + custom color tokens
+│       ├── utils/cn.js                  # class merge utility
+│       ├── pages/
+│       │   ├── Dashboard.jsx            # 3-col/2-col/mobile-tab layout
+│       │   └── SetupWizard.jsx          # 6-step guided setup
+│       └── components/
+│           ├── narrative/               # RegimeMood, RiskMeter, WorkerStory,
+│           │                            #   MoneyFlow, DomainMap, TimelineView
+│           ├── setup/                   # WelcomeStep … ReviewStep + StepIndicator
+│           ├── education/               # Tooltip, glossary (23 terms)
+│           ├── ThesisCard.jsx
+│           ├── PortfolioView.jsx
+│           ├── BacktestReport.jsx
+│           ├── SystemMetrics.jsx
+│           └── GlobalControls.jsx       # emergency stop modal
 ├── hypervisor/
 │   ├── Dockerfile                       # Build context is project root (.)
 │   ├── main.py                          # FastAPI orchestrator + APScheduler sweep
 │   ├── allocator/capital.py             # RegimeAllocator — 7 regimes, 5 workers
-│   ├── regime/classifier.py             # Regime detector
+│   ├── regime/
+│   │   ├── classifier.py                # Regime detector
+│   │   ├── circuit_breakers.py
+│   │   ├── feature_pipeline.py
+│   │   └── hmm_model.py
 │   └── risk/manager.py                  # Risk enforcement
 ├── workers/
 │   ├── nautilus/
@@ -758,10 +845,19 @@ mara/
 │   └── stocksharp/                      # Phase 3 only — .NET 8 IBKR router
 ├── data/feeds/
 │   ├── market_data.py                   # yfinance, FRED wrappers; UUP/BDRY proxies
-│   └── conflict_index.py                # ACLED + GDELT + market proxy fusion
+│   ├── conflict_index.py                # ACLED + GDELT + market proxy fusion
+│   ├── domain_router.py                 # OSINT domain entry/exit routing
+│   ├── osint_processor.py               # OSINT event aggregator
+│   ├── edgar_client.py                  # SEC EDGAR insider buying
+│   ├── gdelt_client.py                  # GDELT v2 conflict queries
+│   ├── maritime_client.py               # AISstream ship tracking
+│   ├── environment_client.py            # NASA FIRMS fire detection
+│   ├── ucdp_client.py                   # Uppsala Conflict Data
+│   ├── funding_rates.py                 # OKX perpetual funding rates
+│   └── order_book.py                    # OKX order book depth
 ├── tests/
 │   ├── test_mara.py                     # Unit + integration tests
-│   └── test_integration_dryrun.py       # Dry-run integration suite (86 pass, 19 skip)
+│   └── test_integration_dryrun.py       # Dry-run integration suite (120+ pass, 7 skip)
 └── scripts/
     └── deploy_pi.sh                     # Raspberry Pi deployment script
 ```
@@ -774,4 +870,4 @@ MARA is a research and development system. Past performance does not guarantee f
 
 ---
 
-**MARA v1.0 | March 2026 | LGPL-3.0**
+**MARA v1.1 | April 2026 | LGPL-3.0**

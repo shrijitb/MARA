@@ -1,6 +1,6 @@
 ================================================================================
-MARA – Multi-Agent Risk-Adjusted Capital Orchestrator
-Copyright 2025 Shrijit
+Arka — Regime-Aware Capital Orchestrator
+Copyright 2025-2026 Shrijit
 
 THIRD-PARTY LICENSE NOTICES
 ================================================================================
@@ -31,57 +31,54 @@ Used for:
   - Paper trading simulator
 
 ================================================================================
-2. StockSharp (S#)
+2. edgartools
 ================================================================================
 
-Repository: https://github.com/StockSharp/StockSharp
-License:    Apache License 2.0
-Copyright:  StockSharp Contributors
-
-Source:
-  https://github.com/StockSharp/StockSharp/blob/master/LICENSE
-
-Terms:
-  Licensed under Apache 2.0. Compatible with LGPL-3.0.
-
-Used for:
-  - Reference integrations and connector patterns
-  - Exploratory phase 2 (Interactive Brokers wrapper planned)
-
-================================================================================
-3. AutoHedge
-================================================================================
-
-Repository: https://github.com/The-Swarm-Corporation/AutoHedge
+Repository: https://github.com/dgunning/edgartools
 License:    MIT License
-Copyright:  The Swarm Corporation
+Copyright:  Dwight Gunning
 
 Source:
-  https://github.com/The-Swarm-Corporation/AutoHedge/blob/main/LICENSE
+  https://github.com/dgunning/edgartools/blob/main/LICENSE
 
 Terms:
   Licensed under MIT. Compatible with LGPL-3.0.
 
 Used for:
-  - Multi-agent framework architecture patterns
-  - LLM advisory layer (Director, Quant, Risk agents)
-  - Ollama/phi3:mini inference integration
+  - SEC EDGAR data retrieval for fundamental analysis
 
 ================================================================================
-4. Polymarket Market Maker Bot
+3. gdeltdoc
 ================================================================================
 
-Repository: https://github.com/lorine93s/polymarket-market-maker-bot
-License:    Unlicensed (permissive use)
-Copyright:  lorine93s
+Repository: https://github.com/alex9smith/gdelt-doc-api
+License:    MIT License
 
 Used for:
-  - Polymarket CLOB order book reference implementation
-  - Inventory management patterns
-  - Spread farming logic
+  - GDELT DOC 2.0 API structured ingestion (optional; falls back to urllib)
 
 ================================================================================
-5. Additional Dependencies
+4. instructor
+================================================================================
+
+Repository: https://github.com/jxnl/instructor
+License:    MIT License
+
+Used for:
+  - Pydantic schema enforcement on Ollama LLM responses for OSINT extraction
+
+================================================================================
+5. websockets
+================================================================================
+
+Repository: https://github.com/python-websockets/websockets
+License:    BSD 3-Clause
+
+Used for:
+  - AIS maritime stream ingestion via aisstream.io websocket API
+
+================================================================================
+6. Additional Dependencies
 ================================================================================
 
 Python ecosystem (dependencies listed in requirements.txt):
@@ -94,6 +91,9 @@ Python ecosystem (dependencies listed in requirements.txt):
   - numpy (BSD)
   - pandas (BSD)
   - python-dotenv (BSD)
+  - hmmlearn (BSD)
+  - APScheduler (MIT)
+  - python-telegram-bot (LGPL-3.0)
   - And others — see requirements.txt for complete list
 
 All Python dependencies are compatible with LGPL-3.0.
@@ -102,18 +102,18 @@ All Python dependencies are compatible with LGPL-3.0.
 LGPL-3.0 COMPLIANCE STATEMENT
 ================================================================================
 
-MARA is distributed under LGPL-3.0 due to its use of NautilusTrader
+Arka is distributed under LGPL-3.0 due to its use of NautilusTrader
 (also LGPL-3.0).
 
 Key obligations:
-  1. Source code availability: The source code of MARA and any modifications
+  1. Source code availability: The source code of Arka and any modifications
      to NautilusTrader must be available to recipients.
-  
+
   2. License compatibility: Recipients may redistribute under LGPL-3.0 terms.
-  
-  3. No restrictions on use: You may use MARA commercially or privately.
-  
-  4. Modification rights: You may modify MARA and NautilusTrader for your needs.
+
+  3. No restrictions on use: You may use Arka commercially or privately.
+
+  4. Modification rights: You may modify Arka and NautilusTrader for your needs.
 
 For detailed terms, see:
   - LICENSE file in this repository
@@ -125,11 +125,9 @@ LICENSE COMPATIBILITY MATRIX
 
 All dependencies are compatible with LGPL-3.0:
 
-  ✓ NautilusTrader (LGPL-3.0)    → Direct match
-  ✓ StockSharp (Apache 2.0)      → Compatible (permissive)
-  ✓ AutoHedge (MIT)              → Compatible (permissive)
-  ✓ Polymarket Bot (Unlicensed)  → Compatible (permissive)
-  ✓ Python ecosystem             → All compatible
+  NautilusTrader (LGPL-3.0)  → Direct match
+  edgartools (MIT)            → Compatible (permissive)
+  Python ecosystem            → All compatible
 
 NO LICENSE CONFLICTS detected.
 
@@ -137,24 +135,24 @@ NO LICENSE CONFLICTS detected.
 DISTRIBUTION NOTES
 ================================================================================
 
-For Hardware Distribution (Raspberry Pi with MARA preloaded):
+For Hardware Distribution (Raspberry Pi with Arka preloaded):
 
   1. Include LICENSE and NOTICE.txt files with the hardware.
-  
+
   2. Provide a README explaining LGPL-3.0 terms.
-  
+
   3. Make source code available:
      - Via GitHub repository (preferred)
      - Via downloadable archive on product website
      - Upon request from customers
-  
+
   4. Document any modifications made to NautilusTrader or other
      LGPL components.
-  
+
   5. Include build/compilation instructions if distributing compiled binaries.
 
 LGPL-3.0 explicitly permits commercial distribution of hardware+software.
-You may sell Raspberry Pi devices with MARA preloaded.
+You may sell Raspberry Pi devices with Arka preloaded.
 
 ================================================================================
 ATTRIBUTION
@@ -162,7 +160,7 @@ ATTRIBUTION
 
 For user-facing attribution, you may use:
 
-  "MARA is powered by NautilusTrader, an enterprise-grade trading engine
+  "Arka is powered by NautilusTrader, an enterprise-grade trading engine
    licensed under LGPL-3.0. For more information, visit:
    https://github.com/nautechsystems/nautilus_trader"
 
@@ -176,5 +174,5 @@ For licensing questions, refer to:
   - Individual project repositories (linked above)
 
 ================================================================================
-Last Updated: 2026-03-26
+Last Updated: 2026-04-11
 ================================================================================
