@@ -9,34 +9,34 @@
 
 ### Bugs — Critical Defects
 
-- [ ] **BUG-01**: `CYCLE_INTERVAL_SEC` default in `hypervisor/main.py` (line 95) is `3600`; `validate_config()` defaults to `"60"` and enforces `10–600`. These must be aligned to a single consistent default so any environment without `.env` behaves as documented (60s).
-- [ ] **BUG-02**: `GET /health/locks` writes a `"test_worker"` entry with `+$100 PnL` into live `HypervisorState.worker_pnl`. This persists across requests and inflates reported PnL in `/status` and `/dashboard/state`. The side-effecting lock test must be removed or isolated.
-- [ ] **BUG-03**: `GET /health/persistence` calls `await repo.log_regime("TEST", {}, False)` against the production database on every health check. This creates `regime="TEST"` rows in `data/arka.db`. Must use a rollback transaction or remove the write entirely.
-- [ ] **BUG-04**: `validate_config()` is called at module import time (`hypervisor/main.py` line 1012) and raises `SystemExit` if env vars are missing. Any tool or test that imports `hypervisor.main` without a full `.env` crashes immediately. Must be moved into the FastAPI `lifespan` context.
-- [ ] **BUG-05**: Watchlist endpoint rejects any ticker containing `.`, `-`, `=`, or `/` (e.g., `BRK.B`, `BTC-USDT-SWAP`, `GC=F`) due to `isalnum()` check. Validation must allow `[A-Z0-9.=/-]` up to 20 characters.
-- [ ] **BUG-06**: `_pull_worker_status()` in `hypervisor/main.py` polls 4 workers sequentially — worst-case 40 seconds per cycle. Must be refactored to `asyncio.gather()` matching the pattern in `_check_worker_health()`.
-- [ ] **BUG-07**: GDELT conflict index sleeps 3.5s × 3 queries = 10.5s synchronously in the main cycle. Must be moved to a background cached task so the main cycle reads the last cached score.
-- [ ] **BUG-08**: Deferred imports `from hypervisor.allocator.capital import HMM_STATE_LABELS` and `import numpy as np` inside `_run_cycle()` (called every cycle). Must be moved to module-level imports.
+- [x] **BUG-01**: `CYCLE_INTERVAL_SEC` default in `hypervisor/main.py` (line 95) is `3600`; `validate_config()` defaults to `"60"` and enforces `10–600`. These must be aligned to a single consistent default so any environment without `.env` behaves as documented (60s).
+- [x] **BUG-02**: `GET /health/locks` writes a `"test_worker"` entry with `+$100 PnL` into live `HypervisorState.worker_pnl`. This persists across requests and inflates reported PnL in `/status` and `/dashboard/state`. The side-effecting lock test must be removed or isolated.
+- [x] **BUG-03**: `GET /health/persistence` calls `await repo.log_regime("TEST", {}, False)` against the production database on every health check. This creates `regime="TEST"` rows in `data/arka.db`. Must use a rollback transaction or remove the write entirely.
+- [x] **BUG-04**: `validate_config()` is called at module import time (`hypervisor/main.py` line 1012) and raises `SystemExit` if env vars are missing. Any tool or test that imports `hypervisor.main` without a full `.env` crashes immediately. Must be moved into the FastAPI `lifespan` context.
+- [x] **BUG-05**: Watchlist endpoint rejects any ticker containing `.`, `-`, `=`, or `/` (e.g., `BRK.B`, `BTC-USDT-SWAP`, `GC=F`) due to `isalnum()` check. Validation must allow `[A-Z0-9.=/-]` up to 20 characters.
+- [x] **BUG-06**: `_pull_worker_status()` in `hypervisor/main.py` polls 4 workers sequentially — worst-case 40 seconds per cycle. Must be refactored to `asyncio.gather()` matching the pattern in `_check_worker_health()`.
+- [x] **BUG-07**: GDELT conflict index sleeps 3.5s × 3 queries = 10.5s synchronously in the main cycle. Must be moved to a background cached task so the main cycle reads the last cached score.
+- [x] **BUG-08**: Deferred imports `from hypervisor.allocator.capital import HMM_STATE_LABELS` and `import numpy as np` inside `_run_cycle()` (called every cycle). Must be moved to module-level imports.
 
 ### Missing Critical Features
 
-- [ ] **FEAT-01**: `/api/dashboard/state` endpoint does not exist in `hypervisor/main.py`. The dashboard polls this every 10 seconds and receives HTTP 404. All live dashboard panels are non-functional. The endpoint must be implemented per the schema in CLAUDE.md section 15.
-- [ ] **FEAT-02**: Telegram bot does not validate `TELEGRAM_ALLOWED_USER_ID` before processing `/pause`, `/resume`, or portfolio commands when the env var is unset. Must fail-safe: if unset, reject all commands with a logged warning.
-- [ ] **FEAT-03**: Arbitrader worker (`workers/arbitrader/`) has a complete REST contract and Dockerfile but is absent from `docker-compose.yml` and `WORKER_REGISTRY`. Must either be formally registered as a worker or explicitly documented as Phase 3 only (and CLAUDE.md health check on port 8004 corrected).
+- [x] **FEAT-01**: `/api/dashboard/state` endpoint does not exist in `hypervisor/main.py`. The dashboard polls this every 10 seconds and receives HTTP 404. All live dashboard panels are non-functional. The endpoint must be implemented per the schema in CLAUDE.md section 15.
+- [x] **FEAT-02**: Telegram bot does not validate `TELEGRAM_ALLOWED_USER_ID` before processing `/pause`, `/resume`, or portfolio commands when the env var is unset. Must fail-safe: if unset, reject all commands with a logged warning.
+- [x] **FEAT-03**: Arbitrader worker (`workers/arbitrader/`) has a complete REST contract and Dockerfile but is absent from `docker-compose.yml` and `WORKER_REGISTRY`. Must either be formally registered as a worker or explicitly documented as Phase 3 only (and CLAUDE.md health check on port 8004 corrected).
 
 ### Safety Rails
 
-- [ ] **SAFE-01**: `hypervisor/risk/margin_reserve.py` has no test coverage. `tests/test_safety_rails.py` must exercise: reserve calculation, breach detection, and recovery paths.
-- [ ] **SAFE-02**: `hypervisor/risk/expiry_guard.py` has no test coverage. `tests/test_safety_rails.py` must exercise: near-expiry detection, physical delivery prevention, and forced position close logic.
-- [ ] **SAFE-03**: `data/feeds/circuit_breaker.py` and `hypervisor/circuit_breaker.py` have no test coverage. `tests/test_concurrency.py` must exercise: state transitions (CLOSED → OPEN → HALF_OPEN), failure threshold triggering, and reset behavior.
-- [ ] **SAFE-04**: `hypervisor/audit.py` must be verified as actively called for all state-changing events (regime change, capital allocation, worker pause/resume, profit sweep). Audit calls that are dead code must be wired in.
-- [ ] **SAFE-05**: `hypervisor/auth.py` API key exposure: `/setup/status` is unauthenticated and returns the master API key in plain JSON. Must restrict key disclosure to pre-setup state only (before `SETUP_COMPLETE=true`), or require a one-time setup token.
+- [x] **SAFE-01**: `hypervisor/risk/margin_reserve.py` has no test coverage. `tests/test_safety_rails.py` must exercise: reserve calculation, breach detection, and recovery paths.
+- [x] **SAFE-02**: `hypervisor/risk/expiry_guard.py` has no test coverage. `tests/test_safety_rails.py` must exercise: near-expiry detection, physical delivery prevention, and forced position close logic.
+- [x] **SAFE-03**: `data/feeds/circuit_breaker.py` and `hypervisor/circuit_breaker.py` have no test coverage. `tests/test_concurrency.py` must exercise: state transitions (CLOSED → OPEN → HALF_OPEN), failure threshold triggering, and reset behavior.
+- [x] **SAFE-04**: `hypervisor/audit.py` must be verified as actively called for all state-changing events (regime change, capital allocation, worker pause/resume, profit sweep). Audit calls that are dead code must be wired in.
+- [x] **SAFE-05**: `hypervisor/auth.py` API key exposure: `/setup/status` is unauthenticated and returns the master API key in plain JSON. Must restrict key disclosure to pre-setup state only (before `SETUP_COMPLETE=true`), or require a one-time setup token.
 
 ### Security
 
-- [ ] **SEC-01**: CORS `allow_origins=["*"]` in `hypervisor/main.py` (line 362). Must be restricted to `["http://localhost:3000", "http://arka-dashboard:3000"]` (or LAN IP for Pi deployment).
-- [ ] **SEC-02**: `save_credentials()` uses non-atomic `Path.write_text()` — a power loss mid-write corrupts `.env`. Must be replaced with write-to-temp + `os.replace()` (POSIX atomic rename).
-- [ ] **SEC-03**: Docker socket (`/var/run/docker.sock`) is bind-mounted into the hypervisor container, granting full host root access. Must be replaced with a tightly scoped restart mechanism (docker-socket-proxy or equivalent).
+- [x] **SEC-01**: CORS `allow_origins=["*"]` in `hypervisor/main.py` (line 362). Must be restricted to `["http://localhost:3000", "http://arka-dashboard:3000"]` (or LAN IP for Pi deployment).
+- [x] **SEC-02**: `save_credentials()` uses non-atomic `Path.write_text()` — a power loss mid-write corrupts `.env`. Must be replaced with write-to-temp + `os.replace()` (POSIX atomic rename).
+- [x] **SEC-03**: Docker socket (`/var/run/docker.sock`) is bind-mounted into the hypervisor container, granting full host root access. Must be replaced with a tightly scoped restart mechanism (docker-socket-proxy or equivalent).
 
 ### Test Coverage
 

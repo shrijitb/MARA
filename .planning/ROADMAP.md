@@ -6,10 +6,10 @@ This milestone hardens the Arka trading system before Phase 3 live trading begin
 
 ## Phases
 
-- [ ] **Phase 1: Critical Bug Fixes** - Eliminate production state corruption, config inconsistency, and performance blockers in the hypervisor core
-- [ ] **Phase 2: Missing Critical Features** - Implement the missing dashboard state endpoint, Telegram auth guard, and resolve the arbitrader status ambiguity
-- [ ] **Phase 3: Safety Rails Coverage** - Achieve full test coverage for margin_reserve, expiry_guard, circuit_breaker, audit, and auth key exposure
-- [ ] **Phase 4: Security Hardening** - Restrict CORS origins, make credential writes atomic, and replace the Docker socket mount
+- [x] **Phase 1: Critical Bug Fixes** - Eliminate production state corruption, config inconsistency, and performance blockers in the hypervisor core
+- [x] **Phase 2: Missing Critical Features** - Implement the missing dashboard state endpoint, Telegram auth guard, and resolve the arbitrader status ambiguity
+- [x] **Phase 3: Safety Rails Coverage** - Achieve full test coverage for margin_reserve, expiry_guard, circuit_breaker, audit, and auth key exposure
+- [x] **Phase 4: Security Hardening** - Restrict CORS origins, make credential writes atomic, and replace the Docker socket mount
 - [ ] **Phase 5: Test Coverage Expansion** - Reach 150+ passing tests covering DB layer, setup endpoints, HMM label consistency, health-check pollution, and arbitrader contract
 - [ ] **Phase 6: Code Quality & Fragile Pattern Remediation** - Fix nautilus data feed isolation, gate Phase 3 stubs, ship HMM model in Docker image, pin hmmlearn, and guard yfinance data quality
 - [ ] **Phase 7: Stress Test & Sign-Off** - Run 24–48 hour paper trading stress test and produce a documented pass/fail verdict
@@ -98,10 +98,10 @@ This milestone hardens the Arka trading system before Phase 3 live trading begin
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Critical Bug Fixes | 0/TBD | Not started | - |
-| 2. Missing Critical Features | 0/TBD | Not started | - |
-| 3. Safety Rails Coverage | 0/TBD | Not started | - |
-| 4. Security Hardening | 0/TBD | Not started | - |
+| 1. Critical Bug Fixes | Done | Complete | ✅ |
+| 2. Missing Critical Features | Done | Complete | ✅ |
+| 3. Safety Rails Coverage | Done | Complete | ✅ |
+| 4. Security Hardening | Done | Complete | ✅ |
 | 5. Test Coverage Expansion | 0/TBD | Not started | - |
 | 6. Code Quality & Fragile Patterns | 0/TBD | Not started | - |
 | 7. Stress Test & Sign-Off | 0/TBD | Not started | - |
