@@ -94,50 +94,50 @@
 
 ## Traceability
 
-*Populated by roadmapper agent.*
+*Populated by roadmapper agent — 2026-04-15*
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUG-01 | — | Pending |
-| BUG-02 | — | Pending |
-| BUG-03 | — | Pending |
-| BUG-04 | — | Pending |
-| BUG-05 | — | Pending |
-| BUG-06 | — | Pending |
-| BUG-07 | — | Pending |
-| BUG-08 | — | Pending |
-| FEAT-01 | — | Pending |
-| FEAT-02 | — | Pending |
-| FEAT-03 | — | Pending |
-| SAFE-01 | — | Pending |
-| SAFE-02 | — | Pending |
-| SAFE-03 | — | Pending |
-| SAFE-04 | — | Pending |
-| SAFE-05 | — | Pending |
-| SEC-01 | — | Pending |
-| SEC-02 | — | Pending |
-| SEC-03 | — | Pending |
-| COVER-01 | — | Pending |
-| COVER-02 | — | Pending |
-| COVER-03 | — | Pending |
-| COVER-04 | — | Pending |
-| COVER-05 | — | Pending |
-| COVER-06 | — | Pending |
-| COVER-07 | — | Pending |
-| COVER-08 | — | Pending |
-| QUAL-01 | — | Pending |
-| QUAL-02 | — | Pending |
-| QUAL-03 | — | Pending |
-| QUAL-04 | — | Pending |
-| QUAL-05 | — | Pending |
-| STRESS-01 | — | Pending |
-| STRESS-02 | — | Pending |
+| BUG-01 | Phase 1 | Pending |
+| BUG-02 | Phase 1 | Pending |
+| BUG-03 | Phase 1 | Pending |
+| BUG-04 | Phase 1 | Pending |
+| BUG-05 | Phase 1 | Pending |
+| BUG-06 | Phase 1 | Pending |
+| BUG-07 | Phase 1 | Pending |
+| BUG-08 | Phase 1 | Pending |
+| FEAT-01 | Phase 2 | Pending |
+| FEAT-02 | Phase 2 | Pending |
+| FEAT-03 | Phase 2 | Pending |
+| SAFE-01 | Phase 3 | Pending |
+| SAFE-02 | Phase 3 | Pending |
+| SAFE-03 | Phase 3 | Pending |
+| SAFE-04 | Phase 3 | Pending |
+| SAFE-05 | Phase 3 | Pending |
+| SEC-01 | Phase 4 | Pending |
+| SEC-02 | Phase 4 | Pending |
+| SEC-03 | Phase 4 | Pending |
+| COVER-01 | Phase 5 | Pending |
+| COVER-02 | Phase 5 | Pending |
+| COVER-03 | Phase 5 | Pending |
+| COVER-04 | Phase 5 | Pending |
+| COVER-05 | Phase 5 | Pending |
+| COVER-06 | Phase 5 | Pending |
+| COVER-07 | Phase 5 | Pending |
+| COVER-08 | Phase 5 | Pending |
+| QUAL-01 | Phase 6 | Pending |
+| QUAL-02 | Phase 6 | Pending |
+| QUAL-03 | Phase 6 | Pending |
+| QUAL-04 | Phase 6 | Pending |
+| QUAL-05 | Phase 6 | Pending |
+| STRESS-01 | Phase 7 | Pending |
+| STRESS-02 | Phase 7 | Pending |
 
 **Coverage:**
 - v1 requirements: 34 total
-- Mapped to phases: 0 (roadmapper pending)
-- Unmapped: 34 ⚠️
+- Mapped to phases: 34/34
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-15*
-*Last updated: 2026-04-15 after initial definition*
+*Last updated: 2026-04-15 — traceability populated by roadmapper*
