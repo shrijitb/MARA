@@ -102,8 +102,8 @@ A **FastAPI Hypervisor** orchestrates five specialized worker agents:
 - **Analyst**: LLM-based advisory (phi3:mini via Ollama + SearXNG web search)
 - **Core Dividends**: Passive SCHD + VYM ETF buy-and-hold sleeve
 
-Capital flows dynamically based on **7 market regimes** (WAR_PREMIUM, CRISIS_ACUTE, BEAR_RECESSION, etc.). The hypervisor includes:
-- Regime classifier (market data + ACLED + GDELT conflict index)
+Capital flows dynamically based on **4 market regimes** (RISK_ON, RISK_OFF, CRISIS, TRANSITION). The hypervisor includes:
+- Regime classifier (4-state HMM on market data + GDELT conflict index)
 - Capital allocator (regime → per-worker weights, normalised)
 - Risk manager (drawdown, VaR, cooldown, position limits)
 - Quarterly profit sweep (APScheduler, Jan/Apr/Jul/Oct 7th @ 09:00)
@@ -116,7 +116,7 @@ Capital flows dynamically based on **7 market regimes** (WAR_PREMIUM, CRISIS_ACU
 | **Dev (March 2026+)** | Ubuntu 24.04 native |
 | **Production** | Raspberry Pi 5 (16GB) → Docker ARM64 (buildx + QEMU) |
 | **Exchange** | OKX only (Binance HTTP 451, Bybit HTTP 403 — geo-blocked) |
-| **Data** | yfinance, FRED, ACLED, GDELT, live order books |
+| **Data** | yfinance, FRED, GDELT, live order books |
 
 ---
 
