@@ -1,4 +1,4 @@
-# SearXNG settings for Arka Intelligence search
+# SearXNG settings for Arca Intelligence search
 # Mounted into /etc/searxng/settings.yml inside the container.
 #
 # Design choices:
@@ -12,7 +12,7 @@
 use_default_settings: true
 
 general:
-  instance_name: "Arka Intelligence"
+  instance_name: "Arca Intelligence"
   privacypolicy_url: false
   donation_url: false
   contact_url: false
@@ -30,7 +30,7 @@ search:
 
 server:
   # Change this in production — any string works for self-hosted
-  secret_key: "arka-mara-searxng-key-change-in-prod"
+  secret_key: "arca-mara-searxng-key-change-in-prod"
   limiter: false
   image_proxy: false
   method: "GET"

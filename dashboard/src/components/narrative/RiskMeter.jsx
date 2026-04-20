@@ -39,7 +39,7 @@ export default function RiskMeter({ portfolio, regime }) {
   const { text, icon, ringClass } = score >= 60
     ? { text: 'Portfolio looks good',  icon: '☀️', ringClass: 'ring-profit/15' }
     : score >= 30
-    ? { text: 'Arka is being careful', icon: '🌤', ringClass: 'ring-warn/15' }
+    ? { text: 'Arca is being careful', icon: '🌤', ringClass: 'ring-warn/15' }
     : { text: 'Protecting capital',    icon: '⛈', ringClass: 'ring-loss/15' };
 
   const scoreColor = score >= 60 ? '#00E676' : score >= 30 ? '#FFD740' : '#FF1744';

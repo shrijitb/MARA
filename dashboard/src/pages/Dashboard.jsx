@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { cn } from '../utils/cn.js';
-import { useArkaData } from '../hooks/useArkaData.js';
+import { useArcaData } from '../hooks/useArcaData.js';
 
 import RegimeMood    from '../components/narrative/RegimeMood.jsx';
 import MoneyFlow     from '../components/narrative/MoneyFlow.jsx';
@@ -22,7 +22,7 @@ const TABS = [
 ];
 
 export default function Dashboard({ data: initialData }) {
-  const { data: liveData, setupStatus, refresh } = useArkaData();
+  const { data: liveData, setupStatus, refresh } = useArcaData();
   const [mobileTab, setMobileTab] = useState('home');
   const [showSettings, setShowSettings] = useState(false);
 
@@ -44,7 +44,7 @@ export default function Dashboard({ data: initialData }) {
       {/* ── Top bar ── */}
       <header className="glass border-b border-edge flex items-center justify-between px-4 py-2.5 shrink-0 z-10">
         <div className="flex items-center gap-3">
-          <span className="font-jetbrains text-base font-bold tracking-[0.2em] gradient-text">ARKA</span>
+          <span className="font-jetbrains text-base font-bold tracking-[0.2em] gradient-text">ARCA</span>
           {regime?.label && (
             <RegimeChip label={regime.label} />
           )}

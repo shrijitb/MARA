@@ -19,7 +19,7 @@ export default function ReviewStep({ onBack, onLaunch, setupStatus, launching })
           <div className="text-5xl mb-3">🚀</div>
           <h2 className="text-xl font-bold text-cream">Ready to launch</h2>
           <p className="text-sm text-muted mt-1.5 leading-relaxed">
-            Arka will start in paper trading mode. No real money is at risk.
+            Arca will start in paper trading mode. No real money is at risk.
           </p>
         </div>
 
@@ -40,7 +40,7 @@ export default function ReviewStep({ onBack, onLaunch, setupStatus, launching })
 
         <div className="flex items-start gap-2 p-3 bg-info/5 border border-info/15 rounded-xl text-xs text-muted">
           <span className="shrink-0">🤖</span>
-          <span>The regime classifier runs its first cycle within 90 seconds of launch. Check the dashboard to see Arka's market read.</span>
+          <span>The regime classifier runs its first cycle within 90 seconds of launch. Check the dashboard to see Arca's market read.</span>
         </div>
       </div>
 
@@ -56,7 +56,7 @@ export default function ReviewStep({ onBack, onLaunch, setupStatus, launching })
               : 'bg-profit text-black hover:bg-profit/90 active:scale-[0.98]'
           )}
         >
-          {launching ? '⏳ Starting Arka...' : '🚀 Launch Arka'}
+          {launching ? '⏳ Starting Arca...' : '🚀 Launch Arca'}
         </button>
       </div>
     </div>

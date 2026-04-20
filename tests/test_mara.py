@@ -1,7 +1,7 @@
 """
 tests/test_mara.py
 
-Arka component test suite.
+Arca component test suite.
 
 Two categories:
   UNIT          Pure logic — no network, no .env, runs in <5s total.
@@ -1930,5 +1930,5 @@ def _run():
     return f
 
 if __name__ == "__main__":
-    print("\n" + "="*50 + "\n  MARA unit tests\n" + "="*50 + "\n")
+    print("\n" + "="*50 + "\n  ARCA unit tests\n" + "="*50 + "\n")
     sys.exit(_run())

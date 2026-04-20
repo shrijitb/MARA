@@ -1,5 +1,5 @@
 """
-Arka Data Layer — data/feeds/market_data.py
+Arca Data Layer — data/feeds/market_data.py
 
 Single source of truth for all market data in the system.
 All workers and the hypervisor import from here — never directly from yfinance/ccxt/etc.
@@ -462,7 +462,7 @@ def get_macro_snapshot() -> dict:
 
 if __name__ == "__main__":
     print("\n" + "="*60)
-    print("ARKA DATA LAYER — VERIFICATION")
+    print("ARCA DATA LAYER — VERIFICATION")
     print("="*60)
 
     tests = {

@@ -2,7 +2,7 @@
 tests/test_concurrency.py
 
 Comprehensive test suite for race conditions, circuit breaker state transitions,
-and concurrent state access in the Arka Hypervisor.
+and concurrent state access in the Arca Hypervisor.
 """
 
 import asyncio

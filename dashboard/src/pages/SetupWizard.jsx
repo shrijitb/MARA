@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { arkaFetch } from '../utils/api.js';
+import { arcaFetch } from '../utils/api.js';
 import StepIndicator from '../components/setup/StepIndicator.jsx';
 import WelcomeStep   from '../components/setup/WelcomeStep.jsx';
 import DeviceStep    from '../components/setup/DeviceStep.jsx';
@@ -10,7 +10,7 @@ import ReviewStep    from '../components/setup/ReviewStep.jsx';
 
 async function postCreds(creds) {
   try {
-    const r = await arkaFetch('/setup/credentials', {
+    const r = await arcaFetch('/setup/credentials', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(creds),
@@ -36,7 +36,7 @@ export default function SetupWizard({ onComplete, setupStatus }) {
     <div className="min-h-screen bg-black flex flex-col">
       {/* Top bar */}
       <header className="fixed top-0 inset-x-0 z-20 glass border-b border-edge flex items-center justify-center h-12">
-        <span className="font-jetbrains text-base font-bold tracking-[0.25em] gradient-text">ARKA</span>
+        <span className="font-jetbrains text-base font-bold tracking-[0.25em] gradient-text">ARCA</span>
       </header>
 
       {/* Scroll area */}

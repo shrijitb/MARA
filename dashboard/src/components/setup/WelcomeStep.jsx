@@ -1,7 +1,7 @@
 const POINTS = [
-  { icon: '🤖', text: 'Arka is an AI that watches markets and manages trades for you' },
+  { icon: '🤖', text: 'Arca is an AI that watches markets and manages trades for you' },
   { icon: '📊', text: 'Multiple strategies + live intelligence data work together automatically' },
-  { icon: '🔒', text: 'Your money stays on the exchange — Arka only sends trade instructions' },
+  { icon: '🔒', text: 'Your money stays on the exchange — Arca only sends trade instructions' },
   { icon: '📄', text: 'Everything starts in paper mode. Zero risk until you decide to go live.' },
 ];
 
@@ -11,7 +11,7 @@ export default function WelcomeStep({ onNext }) {
       {/* Logo */}
       <div className="mb-10">
         <div className="text-6xl mb-4 anim-sun inline-block select-none">⚡</div>
-        <h1 className="font-jetbrains text-4xl font-bold tracking-[0.25em] gradient-text">ARKA</h1>
+        <h1 className="font-jetbrains text-4xl font-bold tracking-[0.25em] gradient-text">ARCA</h1>
         <p className="text-muted text-sm mt-2 tracking-widest">Agentic Risk-Kinetic Allocator</p>
       </div>
 

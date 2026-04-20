@@ -14,7 +14,7 @@ Strategy:
   In live mode (Phase 3): requires a wired broker to place orders.
   Until then, advisory_only=True on all signals.
 
-REST contract (standard Arka worker):
+REST contract (standard Arca worker):
   GET  /health    liveness
   GET  /status    pnl, sharpe, allocated_usd, open_positions
   GET  /metrics   Prometheus text
@@ -134,7 +134,7 @@ async def lifespan(app: FastAPI):
                 positions=len(state._positions), pnl=state.mark_to_market_pnl())
 
 
-app = FastAPI(title="MARA Core Dividends Worker", lifespan=lifespan)
+app = FastAPI(title="ARCA Core Dividends Worker", lifespan=lifespan)
 
 
 # ── REST Contract ──────────────────────────────────────────────────────────────
@@ -235,7 +235,7 @@ def metrics():
     active  = 0 if state.paused else 1
     pnl     = state.mark_to_market_pnl()
     content = (
-        f'arka_worker_active{{worker="core_dividends"}} {active}\n'
+        f'arca_worker_active{{worker="core_dividends"}} {active}\n'
         f'mara_core_dividends_pnl_usd {pnl:.4f}\n'
         f'mara_core_dividends_open_positions {state.open_positions()}\n'
         f'mara_core_dividends_allocated_usd {state.allocated_usd:.2f}\n'

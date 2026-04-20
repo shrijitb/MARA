@@ -1,7 +1,7 @@
 """
 workers/nautilus/engine.py
 
-ArkaEngine — NautilusTrader TradingNode lifecycle manager.
+ArcaEngine — NautilusTrader TradingNode lifecycle manager.
 
 Modes (controlled by TRADING_MODE env var):
   swing  (default) — 4H bars, SwingMACDStrategy + RangeMeanRevertStrategy
@@ -10,7 +10,7 @@ Modes (controlled by TRADING_MODE env var):
   both             — registers all three strategies simultaneously.
 
 The TradingNode runs as a background asyncio task inside FastAPI's event loop.
-worker_api.py reads shared state from ArkaEngine.state for /status and /metrics.
+worker_api.py reads shared state from ArcaEngine.state for /status and /metrics.
 
 Paper vs live:
   paper (default)  — OKX demo API (is_demo=True).  No real money.
@@ -49,12 +49,12 @@ class EngineState:
         self.active_mode:     str   = "swing"
 
 
-class ArkaEngine:
+class ArcaEngine:
     """
     NautilusTrader TradingNode lifecycle wrapper.
 
     Usage (from worker_api.py lifespan):
-        engine = ArkaEngine(mode="swing")
+        engine = ArcaEngine(mode="swing")
         task   = asyncio.create_task(engine.run())
         # ... FastAPI serves requests, reads engine.state ...
         engine.stop()
@@ -87,7 +87,7 @@ class ArkaEngine:
         )
 
         return TradingNodeConfig(
-            trader_id="ARKA-001",
+            trader_id="ARCA-001",
             data_engine=LiveDataEngineConfig(qsize=10_000),
             exec_engine=LiveExecEngineConfig(qsize=10_000),
             data_clients={
@@ -153,7 +153,7 @@ class ArkaEngine:
 
         if not (api_key and api_secret and passphrase):
             self.state.error = "OKX credentials not set — engine skipped, paper simulator active"
-            logger.info("arka_engine_skipped", reason="no_okx_credentials")
+            logger.info("arca_engine_skipped", reason="no_okx_credentials")
             return
 
         try:
@@ -164,7 +164,7 @@ class ArkaEngine:
             )
         except ImportError as exc:
             self.state.error = f"nautilus_trader not installed: {exc}"
-            logger.warning("arka_engine_import_failed", error=str(exc))
+            logger.warning("arca_engine_import_failed", error=str(exc))
             return
 
         try:
@@ -181,7 +181,7 @@ class ArkaEngine:
             self._node.build()
             self.state.started    = True
             self.state.active_mode = self.mode
-            logger.info("arka_engine_started", mode=self.mode, paper=paper,
+            logger.info("arca_engine_started", mode=self.mode, paper=paper,
                         n_strategies=len(strategies))
 
             # run_async() is a coroutine that blocks until node.stop() is called
@@ -189,7 +189,7 @@ class ArkaEngine:
 
         except Exception as exc:
             self.state.error = f"engine runtime error: {exc}"
-            logger.error("arka_engine_error", error=str(exc))
+            logger.error("arca_engine_error", error=str(exc))
         finally:
             self.state.started = False
 
@@ -200,7 +200,7 @@ class ArkaEngine:
             try:
                 self._node.stop()
             except Exception as exc:
-                logger.warning("arka_engine_stop_error", error=str(exc))
+                logger.warning("arca_engine_stop_error", error=str(exc))
 
     # ── State accessors for worker_api.py ────────────────────────────────────
 

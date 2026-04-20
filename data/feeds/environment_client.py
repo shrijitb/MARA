@@ -83,7 +83,7 @@ def fetch_thermal_anomalies(days_back: int = 1) -> list[dict]:
     try:
         req = urllib.request.Request(
             url,
-            headers={"User-Agent": "Arka-OSINT/2.0"},
+            headers={"User-Agent": "Arca-OSINT/2.0"},
         )
         with urllib.request.urlopen(req, timeout=30) as resp:
             raw = resp.read().decode("utf-8")
@@ -125,7 +125,7 @@ def fetch_earthquakes(days_back: int = 7, min_magnitude: float = _MIN_QUAKE_MAGN
     try:
         req = urllib.request.Request(
             url,
-            headers={"User-Agent": "Arka-OSINT/2.0"},
+            headers={"User-Agent": "Arca-OSINT/2.0"},
         )
         with urllib.request.urlopen(req, timeout=20) as resp:
             data = json.loads(resp.read())

@@ -10,7 +10,7 @@ services:
 
   ollama:
     image: ollama/ollama:0.21.0
-    container_name: arka-ollama
+    container_name: arca-ollama
     volumes:
       - ollama_data:/root/.ollama
     ports:
@@ -32,7 +32,7 @@ services:
   # so a compromised hypervisor cannot run docker exec, pull images, etc.
   docker-proxy:
     image: ghcr.io/tecnativa/docker-socket-proxy:0.4.2
-    container_name: arka-docker-proxy
+    container_name: arca-docker-proxy
     environment:
       # Allow only container restart; everything else defaults to 0 (denied).
       CONTAINERS: 1
@@ -49,7 +49,7 @@ services:
     build:
       context: .
       dockerfile: hypervisor/Dockerfile
-    container_name: arka-hypervisor
+    container_name: arca-hypervisor
     depends_on:
       ollama:
         condition: service_started
@@ -75,7 +75,7 @@ services:
 
   dashboard:
     build: ./dashboard
-    container_name: arka-dashboard
+    container_name: arca-dashboard
     depends_on:
       hypervisor:
         condition: service_healthy
@@ -87,7 +87,7 @@ services:
     build:
       context: .
       dockerfile: workers/nautilus/Dockerfile
-    container_name: arka-nautilus
+    container_name: arca-nautilus
     depends_on:
       hypervisor:
         condition: service_healthy
@@ -107,7 +107,7 @@ services:
 
   worker-prediction-markets:
     build: ./workers/prediction_markets
-    container_name: arka-prediction-markets
+    container_name: arca-prediction-markets
     depends_on:
       hypervisor:
         condition: service_healthy
@@ -124,7 +124,7 @@ services:
 
   worker-analyst:
     build: ./workers/analyst
-    container_name: arka-analyst
+    container_name: arca-analyst
     depends_on:
       # service_started not service_healthy — analyst handles Ollama
       # connection failure gracefully (stub mode, advisory_only=True).
@@ -143,7 +143,7 @@ services:
 
   worker-telegram-bot:
     build: ./workers/telegram_bot
-    container_name: arka-telegram-bot
+    container_name: arca-telegram-bot
     depends_on:
       hypervisor:
         condition: service_healthy
@@ -154,7 +154,7 @@ services:
 
   worker-core-dividends:
     build: ./workers/core_dividends
-    container_name: arka-core-dividends
+    container_name: arca-core-dividends
     depends_on:
       hypervisor:
         condition: service_healthy
@@ -171,7 +171,7 @@ services:
 
   searxng:
     image: searxng/searxng:2026.4.17-e8299a4c3
-    container_name: arka-searxng
+    container_name: arca-searxng
     ports:
       - "8080:8080"
     volumes:

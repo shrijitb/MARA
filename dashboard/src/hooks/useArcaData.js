@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { arkaFetch } from '../utils/api.js';
+import { arcaFetch } from '../utils/api.js';
 
-export function useArkaData(intervalMs = 10000) {
+export function useArcaData(intervalMs = 10000) {
   const [data,        setData]        = useState(null);
   const [setupStatus, setSetupStatus] = useState(null);
   const [error,       setError]       = useState(null);
@@ -9,8 +9,8 @@ export function useArkaData(intervalMs = 10000) {
   const fetchData = useCallback(async () => {
     try {
       const [stateRes, setupRes] = await Promise.all([
-        arkaFetch('/dashboard/state'),
-        arkaFetch('/setup/status'),
+        arcaFetch('/dashboard/state'),
+        arcaFetch('/setup/status'),
       ]);
       if (stateRes.ok) setData(await stateRes.json());
       if (setupRes.ok) setSetupStatus(await setupRes.json());

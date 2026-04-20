@@ -6,8 +6,8 @@ Every public method opens its own session so callers don't manage sessions.
 
 Usage:
     from hypervisor.db.engine import async_session
-    from hypervisor.db.repository import ArkaRepository
-    repo = ArkaRepository(async_session)
+    from hypervisor.db.repository import ArcaRepository
+    repo = ArcaRepository(async_session)
 
     await repo.log_regime("RISK_ON", snapshot, False)
     await repo.snapshot_portfolio(state)
@@ -30,7 +30,7 @@ from hypervisor.db.models import Order, PortfolioState, RegimeLog, Signal
 logger = logging.getLogger(__name__)
 
 
-class ArkaRepository:
+class ArcaRepository:
     """All database I/O. Each method is an independent async transaction."""
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:

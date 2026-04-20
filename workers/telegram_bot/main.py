@@ -1,7 +1,7 @@
 """
 workers/telegram_bot/main.py
 
-MARA Telegram Command Bot — outbound polling, no inbound port required.
+ARCA Telegram Command Bot — outbound polling, no inbound port required.
 
 Commands:
   /status              — hypervisor capital + regime snapshot
@@ -117,7 +117,7 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         s = await _get("/status")
         text = (
-            f"*MARA Status*\n"
+            f"*ARCA Status*\n"
             f"Regime: `{s['regime']}` ({s['regime_confidence']:.0%})\n"
             f"Capital: ${s['total_capital']:.2f}  Free: ${s['free_capital']:.2f}\n"
             f"Mode: {'PAPER' if s.get('paper_trading') else 'LIVE'}\n"
@@ -233,7 +233,7 @@ def main():
     app.add_handler(CommandHandler("resume",    cmd_resume))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
-    logger.info(f"MARA Telegram bot starting (allowed_uid={ALLOWED_UID}, hypervisor={HYPER_URL})")
+    logger.info(f"ARCA Telegram bot starting (allowed_uid={ALLOWED_UID}, hypervisor={HYPER_URL})")
     app.run_polling(drop_pending_updates=True)
 
 

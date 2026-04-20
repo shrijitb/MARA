@@ -5,7 +5,7 @@ NautilusTrader Worker — Systematic Strategy Execution.
 FastAPI service on port 8001.
 
 What this does:
-    Wraps NautilusTrader as an Arka worker.  On startup, ArkaEngine (engine.py)
+    Wraps NautilusTrader as an Arca worker.  On startup, ArcaEngine (engine.py)
     attempts to start a TradingNode connected to OKX.  If credentials are absent
     or nautilus_trader is not installed, it silently falls back to the internal
     pure-Python paper simulator.
@@ -32,7 +32,7 @@ Mode selection:
 
 OKX perpetual format: BTC-USDT-SWAP (not BTC/USDT).
 
-REST contract (full Arka standard + /strategy):
+REST contract (full Arca standard + /strategy):
     GET  /health     liveness
     GET  /status     pnl, sharpe, allocated_usd, open_positions, active_strategy
     GET  /metrics    Prometheus text
@@ -272,7 +272,7 @@ class StrategyState:
 
 
 state  = StrategyState()
-engine = None   # ArkaEngine instance, set in lifespan
+engine = None   # ArcaEngine instance, set in lifespan
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -289,11 +289,11 @@ async def lifespan(app: FastAPI):
     _engine_task: Optional[asyncio.Task] = None
 
     try:
-        from engine import ArkaEngine
-        engine = ArkaEngine(mode=TRADING_MODE)
+        from engine import ArcaEngine
+        engine = ArcaEngine(mode=TRADING_MODE)
         _engine_task = asyncio.create_task(
             engine.run(allocated_usd=state.allocated_usd),
-            name="arka-engine",
+            name="arca-engine",
         )
         # Give the engine a moment to detect missing credentials / import errors
         await asyncio.sleep(0.1)
@@ -483,7 +483,7 @@ def metrics():
     pnl     = engine.get_pnl() if (engine and engine.is_ready()) else state.realised_pnl
     open_p  = engine.get_open_positions() if (engine and engine.is_ready()) else state.open_positions
     content = (
-        f'arka_worker_active{{worker="nautilus"}} {active}\n'
+        f'arca_worker_active{{worker="nautilus"}} {active}\n'
         f'mara_nautilus_pnl_usd {pnl:.4f}\n'
         f'mara_nautilus_open_positions {open_p}\n'
         f'mara_nautilus_trade_count {state.trade_count}\n'

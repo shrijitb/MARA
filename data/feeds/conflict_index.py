@@ -229,7 +229,7 @@ def _fetch_gdelt_legacy() -> dict:
         try:
             req = urllib.request.Request(
                 url,
-                headers={"User-Agent": "Arka-ConflictIndex/2.0"},
+                headers={"User-Agent": "Arca-ConflictIndex/2.0"},
             )
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read())
@@ -538,7 +538,7 @@ if __name__ == "__main__":
     )
 
     print("\n" + "=" * 60)
-    print("  ARKA CONFLICT INDEX — VERIFICATION")
+    print("  ARCA CONFLICT INDEX — VERIFICATION")
     print("=" * 60)
 
     print("\n  Market proxy:")

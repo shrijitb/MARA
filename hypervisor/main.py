@@ -1,7 +1,7 @@
 """
 hypervisor/main.py
 
-Arka Hypervisor — The Regime-Aware Orchestrator.
+Arca Hypervisor — The Regime-Aware Orchestrator.
 
 Cycle (every CYCLE_INTERVAL_SEC, default 3600s):
   1. Health-check all workers via GET /health
@@ -79,8 +79,8 @@ from sqlalchemy import text
 _audit_file_path = Path("data/audit.jsonl")
 
 # Database path for health check endpoint
-_DB_PATH = Path(__file__).parent.parent / "data" / "arka.db"
-from hypervisor.db.repository import ArkaRepository
+_DB_PATH = Path(__file__).parent.parent / "data" / "arca.db"
+from hypervisor.db.repository import ArcaRepository
 from hypervisor.errors import RegimeClassificationError
 from hypervisor.regime.classifier import RegimeClassifier
 from hypervisor.risk.manager import RiskManager
@@ -98,7 +98,7 @@ CYCLE_INTERVAL_SEC  = int(os.environ.get("CYCLE_INTERVAL_SEC", 60))
 WORKER_TIMEOUT_SEC  = int(os.environ.get("WORKER_TIMEOUT_SEC", 10))
 PHASE3_ENABLED      = os.environ.get("PHASE3_ENABLED", "false").lower() == "true"
 MIN_TRADE_SIZE_USD  = float(os.environ.get("MIN_TRADE_SIZE_USD", 10.0))
-PAPER_TRADING       = os.environ.get("ARKA_LIVE", "false").lower() != "true"
+PAPER_TRADING       = os.environ.get("ARCA_LIVE", "false").lower() != "true"
 
 # ── Worker Registry ───────────────────────────────────────────────────────────
 # Keys MUST match capital.py ALLOCATION_PROFILES keys exactly.
@@ -230,7 +230,7 @@ state      = HypervisorState()
 classifier = RegimeClassifier()
 allocator  = RegimeAllocator(total_capital=INITIAL_CAPITAL_USD)
 risk_mgr   = RiskManager(initial_capital=INITIAL_CAPITAL_USD)
-repo       = ArkaRepository(async_session)
+repo       = ArcaRepository(async_session)
 
 
 # ── Telegram notification helper ──────────────────────────────────────────────
@@ -275,7 +275,7 @@ def _run_quarterly_sweep() -> None:
     if surplus > 0:
         _phase3_note = "\n\n_Redemption not yet wired — paper mode only._" if not PHASE3_ENABLED else ""
         msg = (
-            f"📈 *Arka Quarterly Profit Sweep*\n"
+            f"📈 *Arca Quarterly Profit Sweep*\n"
             f"Total capital: ${total:.2f}\n"
             f"Target floor:  ${target:.2f} (initial × 1.10)\n"
             f"Surplus:       *${surplus:.2f}*\n"
@@ -286,7 +286,7 @@ def _run_quarterly_sweep() -> None:
     else:
         shortfall = round(target - state.total_capital, 2)
         msg = (
-            f"📊 *Arka Quarterly Sweep — No Surplus*\n"
+            f"📊 *Arca Quarterly Sweep — No Surplus*\n"
             f"Total capital: ${total:.2f}\n"
             f"Target floor:  ${target:.2f}\n"
             f"Shortfall:     ${shortfall:.2f}\n"
@@ -312,7 +312,7 @@ async def lifespan(app: FastAPI):
     validate_config()
 
     logger.info("=" * 60)
-    logger.info("  ARKA HYPERVISOR STARTING")
+    logger.info("  ARCA HYPERVISOR STARTING")
     logger.info(f"  Capital  : ${INITIAL_CAPITAL_USD:.2f}")
     logger.info(f"  Cycle    : {CYCLE_INTERVAL_SEC}s")
     logger.info(f"  Mode     : {'PAPER' if PAPER_TRADING else 'LIVE — REAL MONEY'}")
@@ -360,10 +360,10 @@ async def lifespan(app: FastAPI):
         pass
     if scheduler:
         scheduler.shutdown(wait=False)
-    logger.info("Arka Hypervisor shut down cleanly.")
+    logger.info("Arca Hypervisor shut down cleanly.")
 
 
-app = FastAPI(title="Arka Hypervisor", version="2.0.0", lifespan=lifespan)
+app = FastAPI(title="Arca Hypervisor", version="2.0.0", lifespan=lifespan)
 
 # Auth middleware — must be added before CORS so it runs first on inbound requests.
 # CORS is still needed so the dashboard (different port in dev) can make requests.
@@ -836,7 +836,7 @@ def _restart_container(service: str) -> None:
     mounting /var/run/docker.sock directly.  This limits the blast radius to
     only POST /containers/{id}/restart — no build, no exec, no image access.
     """
-    project = os.environ.get("COMPOSE_PROJECT_NAME", "arka")
+    project = os.environ.get("COMPOSE_PROJECT_NAME", "arca")
     container = f"{project}-{service.replace('worker-', '')}"
     proxy_url = os.environ.get("DOCKER_PROXY_URL", "http://docker-proxy:2375")
     try:

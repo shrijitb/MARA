@@ -1,5 +1,5 @@
 {
-  "name": "arka",
+  "name": "arca",
   "private": true,
   "version": "1.1.0",
   "type": "module",
@@ -36,8 +36,8 @@
     "wait-on":              "^8.0.0"
   },
   "build": {
-    "appId":       "com.arka.trading",
-    "productName": "Arka",
+    "appId":       "com.arca.trading",
+    "productName": "Arca",
     "directories": { "output": "dist-electron" },
     "files": [
       "dist/**/*",

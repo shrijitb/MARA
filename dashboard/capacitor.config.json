@@ -1,6 +1,6 @@
 {
-  "appId": "com.arka.trading",
-  "appName": "Arka",
+  "appId": "com.arca.trading",
+  "appName": "Arca",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"

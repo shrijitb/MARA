@@ -31,7 +31,7 @@ export default function DataStep({ onNext, onBack, onSave }) {
           <span className="text-[9px] font-bold uppercase tracking-wider bg-edge text-muted px-2 py-0.5 rounded-full">All optional</span>
         </div>
         <p className="text-sm text-muted leading-relaxed mb-5">
-          Arka works without these — free fallbacks cover the basics. Adding them improves the intelligence layer.
+          Arca works without these — free fallbacks cover the basics. Adding them improves the intelligence layer.
         </p>
 
         <div className="space-y-2.5">

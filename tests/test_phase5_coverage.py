@@ -99,7 +99,7 @@ class TestHealthEndpointPollution:
     COVER-02: /health/locks logic must not leave a test key in worker_pnl.
     COVER-03: /health/persistence must not write regime='TEST' rows.
 
-    Tests exercise the underlying HypervisorState and ArkaRepository logic
+    Tests exercise the underlying HypervisorState and ArcaRepository logic
     directly (not via TestClient) because the app lifespan requires a full
     production environment (APScheduler, init_db, validate_config).
     """
@@ -210,7 +210,7 @@ class TestHealthEndpointPollution:
             create_async_engine, AsyncSession, async_sessionmaker,
         )
         from hypervisor.db.models import Base, RegimeLog
-        from hypervisor.db.repository import ArkaRepository
+        from hypervisor.db.repository import ArcaRepository
         from sqlalchemy import select, text
 
         async def run():
@@ -220,7 +220,7 @@ class TestHealthEndpointPollution:
             session_factory = async_sessionmaker(
                 engine, class_=AsyncSession, expire_on_commit=False
             )
-            repo = ArkaRepository(session_factory)
+            repo = ArcaRepository(session_factory)
 
             # Simulate what persistence_health() now does: read-only SELECT 1
             async with session_factory() as session:
@@ -249,24 +249,24 @@ class TestHealthEndpointPollution:
 # COVER-04 — Database Repository Layer Integration
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class TestArkaRepositoryIntegration:
+class TestArcaRepositoryIntegration:
     """
     COVER-04: hypervisor/db/repository.py integration tests.
 
     Uses an in-memory SQLite database to keep tests isolated from the
-    production data/arka.db file.
+    production data/arca.db file.
     """
 
     @pytest.fixture
     def repo_and_session(self):
-        """Create a fresh in-memory DB + ArkaRepository for each test."""
+        """Create a fresh in-memory DB + ArcaRepository for each test."""
         from sqlalchemy.ext.asyncio import (
             create_async_engine,
             AsyncSession,
             async_sessionmaker,
         )
         from hypervisor.db.models import Base
-        from hypervisor.db.repository import ArkaRepository
+        from hypervisor.db.repository import ArcaRepository
 
         async def setup():
             engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
@@ -275,7 +275,7 @@ class TestArkaRepositoryIntegration:
             session_factory = async_sessionmaker(
                 engine, class_=AsyncSession, expire_on_commit=False
             )
-            return ArkaRepository(session_factory), engine
+            return ArcaRepository(session_factory), engine
 
         return asyncio.run(setup())
 
@@ -501,7 +501,7 @@ class TestSetupEndpoints:
 
     def test_setup_credentials_allowed_key_list_non_empty(self):
         """
-        _ALLOWED_CREDENTIAL_KEYS must contain the standard Arka secrets.
+        _ALLOWED_CREDENTIAL_KEYS must contain the standard Arca secrets.
         Guards against accidental truncation of the allow-list.
         """
         import importlib

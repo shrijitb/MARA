@@ -1,7 +1,7 @@
 """
 conftest.py  (~/mara/conftest.py)
 
-Pytest session fixtures for MARA dry-run integration tests.
+Pytest session fixtures for ARCA dry-run integration tests.
 
 TWO JOBS
 --------
@@ -61,7 +61,7 @@ def _check_venv():
     print(
         "\n"
         "╔══════════════════════════════════════════════════════════════╗\n"
-        "║  ARKA DRY-RUN: WRONG PYTHON INTERPRETER                     ║\n"
+        "║  ARCA DRY-RUN: WRONG PYTHON INTERPRETER                     ║\n"
         "║                                                              ║\n"
         f"║  Running: {executable[:52]:<52} ║\n"
         "║                                                              ║\n"

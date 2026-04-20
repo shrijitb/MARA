@@ -4,8 +4,8 @@ hypervisor/db/engine.py
 Async SQLAlchemy engine + session factory backed by aiosqlite.
 
 DATABASE_URL resolves to:
-  - /app/data/arka.db  inside Docker  (WORKDIR /app)
-  - ./data/arka.db     in local dev    (relative to project root)
+  - /app/data/arca.db  inside Docker  (WORKDIR /app)
+  - ./data/arca.db     in local dev    (relative to project root)
 
 Tables are created from data/db/schema.sql on first run via init_db().
 The PRAGMA statements in schema.sql (journal_mode=WAL, synchronous=NORMAL)
@@ -24,7 +24,7 @@ from sqlalchemy.ext.asyncio import (
 
 # Absolute path so it works regardless of cwd
 _DB_DIR = Path(__file__).parent.parent.parent / "data"
-_DB_PATH = _DB_DIR / "arka.db"
+_DB_PATH = _DB_DIR / "arca.db"
 DATABASE_URL = f"sqlite+aiosqlite:///{_DB_PATH}"
 
 engine = create_async_engine(DATABASE_URL, echo=False)

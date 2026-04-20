@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { arkaFetch } from '../../utils/api.js';
+import { arcaFetch } from '../../utils/api.js';
 import { cn } from '../../utils/cn.js';
 
 const PROFILES = {
@@ -15,7 +15,7 @@ export default function DeviceStep({ onNext, onBack }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    arkaFetch('/system/hardware').then(r => r.ok ? r.json() : null)
+    arcaFetch('/system/hardware').then(r => r.ok ? r.json() : null)
       .then(d => { setHw(d); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
@@ -58,7 +58,7 @@ export default function DeviceStep({ onNext, onBack }) {
         )}
 
         <div className="bg-profit/5 border border-profit/15 rounded-xl p-3.5">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-profit mb-2">Arka Will Use</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-profit mb-2">Arca Will Use</p>
           {[
             ['🧠', 'AI Model', prof.model],
             ['⏱', 'Cycle',    `Every ${prof.cycle}`],

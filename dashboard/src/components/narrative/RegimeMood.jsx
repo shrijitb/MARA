@@ -14,21 +14,21 @@ const REGIME = {
     ring: 'ring-orange/20', glow: 'shadow-[0_0_30px_rgba(255,145,0,0.08)]',
     badge: 'bg-orange/10 text-orange border-orange/25',
     bar:   'bg-orange',
-    tip: 'Markets are pulling back. Arka is being more careful with your money.',
+    tip: 'Markets are pulling back. Arca is being more careful with your money.',
   },
   CRISIS: {
     icon: '⛈',  label: 'Red Alert',       anim: 'anim-lightning',
     ring: 'ring-loss/25', glow: 'shadow-[0_0_30px_rgba(255,23,68,0.10)]',
     badge: 'bg-loss/10 text-loss border-loss/30',
     bar:   'bg-loss',
-    tip: 'Markets are in crisis. Arka is protecting your capital.',
+    tip: 'Markets are in crisis. Arca is protecting your capital.',
   },
   TRANSITION: {
     icon: '🌤',  label: 'Shifting Winds',  anim: 'anim-cloud',
     ring: 'ring-warn/20', glow: 'shadow-[0_0_30px_rgba(255,215,64,0.08)]',
     badge: 'bg-warn/10 text-warn border-warn/25',
     bar:   'bg-warn',
-    tip: 'Markets are changing direction. Arka is watching closely.',
+    tip: 'Markets are changing direction. Arca is watching closely.',
   },
 };
 
@@ -116,7 +116,7 @@ export default function RegimeMood({ regime }) {
       {cb && (
         <div className="mt-2.5 flex items-center gap-2 px-3 py-2 rounded-lg bg-warn/8 border border-warn/30 text-warn text-xs">
           <span className="anim-pulse">⚡</span>
-          Emergency override active — Arka is being extra cautious
+          Emergency override active — Arca is being extra cautious
         </div>
       )}
     </div>

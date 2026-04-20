@@ -78,7 +78,7 @@ class EdgarIntelClient:
         "GOOG": "0001652044",
     }
 
-    def __init__(self, user_agent: str = "Arka Trading System arka@localhost"):
+    def __init__(self, user_agent: str = "Arca Trading System arca@localhost"):
         if _EDGAR_AVAILABLE:
             set_identity(user_agent)
         self._watchlist: dict[str, str] = dict(self.DEFAULT_WATCHLIST_CIKS)

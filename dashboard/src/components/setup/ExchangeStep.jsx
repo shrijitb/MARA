@@ -49,7 +49,7 @@ export default function ExchangeStep({ onNext, onBack, onSave }) {
         <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-1">Step 3 of 6</p>
         <h2 className="text-xl font-bold text-cream mb-1">Connect to OKX</h2>
         <p className="text-sm text-muted leading-relaxed mb-5">
-          Arka needs API keys to read market data and trade.
+          Arca needs API keys to read market data and trade.
           Everything runs in <span className="text-warn font-semibold">paper trading mode</span> now — skip this until you're ready to go live.
         </p>
 

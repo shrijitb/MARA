@@ -3,7 +3,7 @@ data/feeds/searxng_client.py
 
 SearXNG metasearch client — deep-dive event and company intelligence.
 
-Queries a self-hosted SearXNG instance (Docker service `arka-searxng`)
+Queries a self-hosted SearXNG instance (Docker service `arca-searxng`)
 to surface breaking news, company exposure, and supply-chain intelligence
 before it reaches mainstream financial terminals. All searches stay local —
 no external rate limits, no API keys, no data leakage.

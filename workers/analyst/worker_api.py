@@ -20,7 +20,7 @@ Domain routing integration:
       [{"domain": str, "action": str, "weight_modifier": float, "rationale": str}]
     These are included in the LLM prompt to generate domain-aware thesis.
 
-REST contract (Arka standard):
+REST contract (Arca standard):
     GET  /health    liveness + agent status
     GET  /status    current regime, last signal, uptime
     GET  /metrics   Prometheus text format
@@ -354,8 +354,8 @@ def resume():
 def metrics():
     active = 0 if state.paused else 1
     content = (
-        f'arka_worker_active{{worker="analyst"}} {active}\n'
-        f'arka_analyst_signals_total {state.signals_generated}\n'
-        f'arka_analyst_uptime_seconds {state.uptime_seconds():.1f}\n'
+        f'arca_worker_active{{worker="analyst"}} {active}\n'
+        f'arca_analyst_signals_total {state.signals_generated}\n'
+        f'arca_analyst_uptime_seconds {state.uptime_seconds():.1f}\n'
     )
     return Response(content=content, media_type="text/plain")

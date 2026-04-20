@@ -1,16 +1,16 @@
 import { useState } from 'react';
-import { useArkaData } from './hooks/useArkaData.js';
+import { useArcaData } from './hooks/useArcaData.js';
 import LoadingScreen    from './components/LoadingScreen.jsx';
 import ConnectionGate   from './components/ConnectionGate.jsx';
 import SetupWizard      from './pages/SetupWizard.jsx';
 import Dashboard        from './pages/Dashboard.jsx';
 
 function isElectron() {
-  return typeof window !== 'undefined' && window.arka?.platform === 'electron';
+  return typeof window !== 'undefined' && window.arca?.platform === 'electron';
 }
 
 function storedUrl() {
-  try { return localStorage.getItem('arka_hypervisor_url'); }
+  try { return localStorage.getItem('arca_hypervisor_url'); }
   catch { return null; }
 }
 
@@ -19,13 +19,13 @@ export default function App() {
   // Web / Capacitor need the user to enter it once; we persist it in localStorage.
   const [connected, setConnected] = useState(() => isElectron() || Boolean(storedUrl()));
 
-  const { data, setupStatus, setupComplete, refresh } = useArkaData();
+  const { data, setupStatus, setupComplete, refresh } = useArcaData();
 
   if (!connected) {
     return (
       <ConnectionGate
         onConnect={url => {
-          localStorage.setItem('arka_hypervisor_url', url);
+          localStorage.setItem('arca_hypervisor_url', url);
           setConnected(true);
         }}
       />

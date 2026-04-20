@@ -64,7 +64,7 @@ def fetch_ucdp_events(days_back: int = 90) -> list[dict]:
         req = urllib.request.Request(
             url,
             headers={
-                "User-Agent":  "Arka-OSINT/2.0 (research; contact: arka@localhost)",
+                "User-Agent":  "Arca-OSINT/2.0 (research; contact: arca@localhost)",
                 "Accept":      "application/json",
             },
         )

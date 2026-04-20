@@ -1,7 +1,7 @@
 """
 hypervisor/audit.py
 
-Structured audit logging for all state-changing events in Arka.
+Structured audit logging for all state-changing events in Arca.
 
 Every state mutation gets a structured log entry that can be queried.
 Audit events are written to both stdout (for Docker logs) and a rotating
@@ -60,7 +60,7 @@ structlog.configure(
     cache_logger_on_first_use=True,
 )
 
-audit_log = structlog.get_logger("arka.audit")
+audit_log = structlog.get_logger("arca.audit")
 
 # Also set up file-based audit logging
 _audit_file_path = Path("data/audit.jsonl")
@@ -79,7 +79,7 @@ def _setup_file_handler() -> Optional[RotatingFileHandler]:
         )
         handler.setFormatter(logging.Formatter('%(message)s'))
         
-        audit_logger = logging.getLogger("arka.audit")
+        audit_logger = logging.getLogger("arca.audit")
         audit_logger.addHandler(handler)
         audit_logger.setLevel(logging.INFO)
         

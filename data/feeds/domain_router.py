@@ -3,7 +3,7 @@ data/feeds/domain_router.py
 
 Domain Router: OSINT-driven market domain entry/exit decisions.
 
-A "domain" is a market segment that Arka can trade:
+A "domain" is a market segment that Arca can trade:
   - crypto_perps:   OKX perpetual swaps (BTC, ETH, SOL, etc.)
   - prediction:     Kalshi + Polymarket prediction markets
   - us_equities:    Via watchlist instruments (advisory only until IBKR)
@@ -17,7 +17,7 @@ The router makes three types of decisions:
 
 Decision inputs:
   - OSINT events (from osint_processor.OSINTPipelineResult)
-  - Domain performance (is Arka profitable in this domain right now?)
+  - Domain performance (is Arca profitable in this domain right now?)
   - Regime probabilities (from HMM classifier)
 
 Decision outputs:

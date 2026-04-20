@@ -14,7 +14,7 @@ export default function LoadingScreen() {
 
       {/* Wordmark */}
       <div className="text-center">
-        <p className="font-jetbrains text-3xl font-bold tracking-[0.3em] gradient-text">ARKA</p>
+        <p className="font-jetbrains text-3xl font-bold tracking-[0.3em] gradient-text">ARCA</p>
         <p className="text-muted text-xs mt-1 tracking-widest uppercase">Agentic Risk-Kinetic Allocator</p>
       </div>
 

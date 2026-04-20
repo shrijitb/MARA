@@ -1,4 +1,4 @@
-# Arka — Regime-Aware Multi-Agent Trading System
+# Arca: Agentic Risk Conscious Algorithms
 
 An autonomous trading system designed for turbulent macro environments. A Python FastAPI hypervisor orchestrates specialised worker agents and allocates capital dynamically using a 4-state Hidden Markov Model regime classifier.
 
@@ -29,7 +29,7 @@ An autonomous trading system designed for turbulent macro environments. A Python
 
 ## Overview
 
-Arka targets **crypto, futures, ETFs, and prediction markets** in regime-driven paper trading. The system is currently in the pre-Phase-3 stabilisation pass — all trading is simulated, no live orders are placed.
+Arca targets **crypto, futures, ETFs, and prediction markets** in regime-driven paper trading. The system is currently in the pre-Phase-3 stabilisation pass — all trading is simulated, no live orders are placed.
 
 ### Core sequence
 
@@ -46,7 +46,7 @@ This cycle runs every 60 seconds. The regime classifier uses a pre-trained 4-sta
 ```
                     ┌──────────────────────────────┐
                     │   Hypervisor  (port 8000)    │
-                    │   FastAPI orchestrator        │
+                    │   FastAPI orchestrator       │
                     │                              │
                     │  ┌────────────────────────┐  │
                     │  │  Regime Classifier     │  │
@@ -79,14 +79,14 @@ This cycle runs every 60 seconds. The regime classifier uses a pre-trained 4-sta
 
 | Container | Port | Tech | Mode |
 |-----------|------|------|------|
-| `arka-hypervisor` | 8000 | FastAPI | Orchestrator |
-| `arka-nautilus` | 8001 | Python paper sim | ADX-routed strategies |
-| `arka-prediction-markets` | 8002 | Python CLOB | Stub (needs `POLY_PRIVATE_KEY`) |
-| `arka-analyst` | 8003 | litellm + Ollama | phi3:mini advisory |
-| `arka-core-dividends` | 8006 | FastAPI | Paper hold (SCHD + VYM) |
-| `arka-ollama` | 11434 | Ollama | phi3:mini CPU inference |
-| `arka-telegram-bot` | none | python-telegram-bot | Polling, no inbound port |
-| `arka-searxng` | 8080 | SearXNG | Local web search for Analyst |
+| `arca-hypervisor` | 8000 | FastAPI | Orchestrator |
+| `arca-nautilus` | 8001 | Python paper sim | ADX-routed strategies |
+| `arca-prediction-markets` | 8002 | Python CLOB | Stub (needs `POLY_PRIVATE_KEY`) |
+| `arca-analyst` | 8003 | litellm + Ollama | phi3:mini advisory |
+| `arca-core-dividends` | 8006 | FastAPI | Paper hold (SCHD + VYM) |
+| `arca-ollama` | 11434 | Ollama | phi3:mini CPU inference |
+| `arca-telegram-bot` | none | python-telegram-bot | Polling, no inbound port |
+| `arca-searxng` | 8080 | SearXNG | Local web search for Analyst |
 | `workers/stocksharp` | 8005 | .NET 8 | Phase 3 only — not deployed |
 
 ---
@@ -191,12 +191,12 @@ React 18 + Vite 5 + Tailwind CSS v4 frontend, served by nginx on port 3000. Prox
 
 On first launch before credentials are saved, the dashboard shows a 6-step guided wizard:
 
-1. **Welcome** — overview of what Arka does
+1. **Welcome** — overview of what Arca does
 2. **Device** — detects Pi vs. laptop via `/api/system/hardware`
 3. **Exchange** — OKX API key / secret / passphrase (paper trading works without them)
 4. **Data Sources** — FRED, NASA FIRMS, AISstream, UCDP, Kalshi (all optional)
 5. **Notifications** — Telegram bot token + User ID
-6. **Review & Launch** — checklist + "Launch Arka" POST
+6. **Review & Launch** — checklist + "Launch Arca" POST
 
 ### Build & run
 
@@ -243,7 +243,7 @@ Never hardcode hex in JSX — always use token classes (`text-cream`, `bg-card`,
 ### One-line install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/shrijitb/ARKA/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/shrijitb/ARCA/main/install.sh | bash
 ```
 
 Automatically detects hardware (x86\_64 or ARM64/Pi 5), selects the optimal Ollama model, generates `.env` from your inputs, and launches the full stack.
@@ -251,8 +251,8 @@ Automatically detects hardware (x86\_64 or ARM64/Pi 5), selects the optimal Olla
 ### Quick start (manual, Ubuntu 24.04)
 
 ```bash
-git clone https://github.com/shrijitb/ARKA.git
-cd ARKA
+git clone https://github.com/shrijitb/ARCA.git
+cd ARCA
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env   # fill in credentials — never commit .env
@@ -272,8 +272,8 @@ wsl --install   # installs Ubuntu 24.04; reboot when prompted
 ```bash
 # Inside Ubuntu 24.04
 sudo apt update && sudo apt install -y python3.12 python3.12-venv python3.12-dev git curl
-git clone https://github.com/shrijitb/ARKA.git
-cd ARKA
+git clone https://github.com/shrijitb/ARCA.git
+cd ARCA
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
@@ -289,24 +289,24 @@ Install Docker Desktop for Windows, enable WSL2 integration for Ubuntu-24.04 in 
 ```bash
 # Install Docker Desktop for Mac, then:
 brew install python@3.12 git
-git clone https://github.com/shrijitb/ARKA.git
-cd ARKA
+git clone https://github.com/shrijitb/ARCA.git
+cd ARCA
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 docker compose up -d
 ```
 
-### CLI (`arka-cli`)
+### CLI (`arca-cli`)
 
-The `arka-cli` script in the repo root provides shortcuts:
+The `arca-cli` script in the repo root provides shortcuts:
 
 ```bash
-./arka-cli status     # worker health + regime
-./arka-cli logs       # tail hypervisor logs
-./arka-cli stop       # docker compose down
-./arka-cli start      # docker compose up -d
-./arka-cli restart    # stop + start
+./arca-cli status     # worker health + regime
+./arca-cli logs       # tail hypervisor logs
+./arca-cli stop       # docker compose down
+./arca-cli start      # docker compose up -d
+./arca-cli restart    # stop + start
 ```
 
 ---
@@ -405,7 +405,7 @@ curl -s http://localhost:8006/health   # core_dividends
 ### Session re-entry
 
 ```bash
-cd ~/ARKA
+cd ~/ARCA
 source .venv/bin/activate
 docker compose up -d
 curl -s http://localhost:8000/status | python3 -m json.tool
@@ -597,7 +597,7 @@ bash scripts/deploy_pi.sh
 
 ```bash
 ssh pi@<PI_IP>
-cd ~/ARKA && docker compose ps
+cd ~/ARCA && docker compose ps
 curl -s http://localhost:8000/status | python3 -m json.tool
 ```
 
@@ -606,7 +606,7 @@ curl -s http://localhost:8000/status | python3 -m json.tool
 ## Repository Structure
 
 ```
-ARKA/
+ARCA/
 ├── LICENSE                              # LGPL-3.0
 ├── NOTICE.txt                           # Third-party attributions
 ├── LGPL3_COMPLIANCE.md                  # Compliance guide for distributors
@@ -616,7 +616,7 @@ ARKA/
 ├── pytest.ini                           # asyncio_mode=auto, integration mark
 ├── requirements.txt
 ├── docker-compose.yml
-├── arka-cli                             # CLI management script
+├── arca-cli                             # CLI management script
 ├── install.sh                           # One-shot installer (detects hardware)
 ├── config/
 │   ├── settings.yaml                    # System config (heartbeat, signal TTL, etc.)
@@ -645,7 +645,7 @@ ARKA/
 │   └── db/
 │       ├── engine.py                    # SQLite async engine (WAL mode)
 │       ├── models.py                    # RegimeLog, Signal, Order ORM models
-│       └── repository.py               # ArkaRepository — all DB I/O
+│       └── repository.py               # ArcaRepository — all DB I/O
 ├── workers/
 │   ├── nautilus/
 │   │   ├── Dockerfile
@@ -695,7 +695,7 @@ ARKA/
 │   ├── vite.config.js
 │   └── src/
 │       ├── App.jsx                      # SetupWizard ↔ Dashboard routing
-│       ├── hooks/useArkaData.js          # 10s polling hook
+│       ├── hooks/useArcaData.js          # 10s polling hook
 │       ├── styles/global.css            # Tailwind v4 tokens + @keyframes
 │       ├── utils/cn.js                  # class merge utility
 │       ├── pages/
@@ -726,12 +726,12 @@ ARKA/
 
 ## License
 
-Arka is distributed under the **GNU Lesser General Public License v3.0 (LGPL-3.0)**.
+Arca is distributed under the **GNU Lesser General Public License v3.0 (LGPL-3.0)**.
 
-Arka uses **NautilusTrader** (also LGPL-3.0). This means:
+Arca uses **NautilusTrader** (also LGPL-3.0). This means:
 
-- Use Arka for free, modify it, sell hardware running it, run it commercially
-- Modifications to Arka itself must remain open under LGPL-3.0
+- Use Arca for free, modify it, sell hardware running it, run it commercially
+- Modifications to Arca itself must remain open under LGPL-3.0
 - Source code is always auditable
 
 ### Third-party licenses
@@ -747,4 +747,4 @@ Full license text: [LICENSE](./LICENSE)
 
 ---
 
-**Arka v0.1 — April 2026 — LGPL-3.0**
+**Arca v0.1 — April 2026 — LGPL-3.0**

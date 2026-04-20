@@ -13,7 +13,7 @@ What this does (Phase 3):
     In live mode (Phase 3): requires KALSHI_EMAIL/KALSHI_PASSWORD or
     POLY_PRIVATE_KEY to place real orders.
 
-REST contract (Arka standard):
+REST contract (Arca standard):
     GET  /health    liveness + paused state
     GET  /status    pnl, sharpe, allocated_usd, open_positions
     GET  /metrics   Prometheus text format
@@ -180,9 +180,9 @@ def resume():
 def metrics():
     active  = 0 if state.paused else 1
     content = (
-        f'arka_worker_active{{worker="prediction_markets"}} {active}\n'
-        f'arka_prediction_markets_pnl {state.pnl:.4f}\n'
-        f'arka_prediction_markets_open_positions {state.open_positions}\n'
-        f'arka_prediction_markets_uptime_seconds {state.uptime_seconds():.1f}\n'
+        f'arca_worker_active{{worker="prediction_markets"}} {active}\n'
+        f'arca_prediction_markets_pnl {state.pnl:.4f}\n'
+        f'arca_prediction_markets_open_positions {state.open_positions}\n'
+        f'arca_prediction_markets_uptime_seconds {state.uptime_seconds():.1f}\n'
     )
     return Response(content=content, media_type="text/plain")

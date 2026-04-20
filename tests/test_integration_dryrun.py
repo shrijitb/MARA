@@ -1,15 +1,15 @@
 """
 tests/test_integration_dryrun.py
 
-Arka Integration Dry-Run Test Suite.
+Arca Integration Dry-Run Test Suite.
 
 PURPOSE
 -------
-Smoke-tests the full MARA stack in-process. No Docker, no real money,
+Smoke-tests the full ARCA stack in-process. No Docker, no real money,
 no real market data. Entire suite should complete in < 60s.
 
 Questions answered:
-  1. Do all workers respond to the MARA REST contract?
+  1. Do all workers respond to the ARCA REST contract?
   2. Does the hypervisor correctly route regime/allocate/pause/resume?
   3. Does the risk manager block on every limit type?
   4. Does the capital allocator produce correct dollar splits per regime?
@@ -152,7 +152,7 @@ def worker_client(request):
 
 class TestWorkerContract:
     """
-    Each worker must implement the full 8-endpoint MARA REST contract.
+    Each worker must implement the full 8-endpoint ARCA REST contract.
 
     FAILURE GUIDE
     ─────────────
@@ -160,7 +160,7 @@ class TestWorkerContract:
     Missing /status fields    → add the field name to /status response dict
     422 Unprocessable Entity  → body schema mismatch on /allocate or /regime
     paused=True after resume  → worker forced paused by regime bias; check REGIME_BIAS
-    arka_worker_active absent → add gauge to /metrics response
+    arca_worker_active absent → add gauge to /metrics response
     """
 
     def test_health_returns_200_with_status_key(self, worker_client):
@@ -251,13 +251,13 @@ class TestWorkerContract:
         )
         print(f"\n  [{name}] paused=False confirmed after /resume")
 
-    def test_metrics_contains_arka_worker_active_gauge(self, worker_client):
+    def test_metrics_contains_arca_worker_active_gauge(self, worker_client):
         name, c = worker_client
         resp = c.get("/metrics")
         assert resp.status_code == 200, \
             f"{name} GET /metrics → HTTP {resp.status_code}"
         body = resp.text
-        expected_gauge = f'arka_worker_active{{worker="{name}"}}'
+        expected_gauge = f'arca_worker_active{{worker="{name}"}}'
         assert expected_gauge in body, (
             f"{name} /metrics missing required Prometheus gauge\n"
             f"  expected to find: {expected_gauge}\n"

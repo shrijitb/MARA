@@ -31,7 +31,7 @@ from typing import Any, Callable, Optional, TypeVar
 import structlog
 
 logger = logging.getLogger(__name__)
-audit_log = structlog.get_logger("arka.audit")
+audit_log = structlog.get_logger("arca.audit")
 
 
 class CircuitState(Enum):

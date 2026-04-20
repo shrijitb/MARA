@@ -26,7 +26,7 @@ export default function ConnectionGate({ onConnect }) {
         setError('Server replied but returned an error. Is this the right address?');
       }
     } catch {
-      setError('Could not reach that address. Check the IP and make sure Arka is running.');
+      setError('Could not reach that address. Check the IP and make sure Arca is running.');
     }
     setTesting(false);
   }
@@ -35,8 +35,8 @@ export default function ConnectionGate({ onConnect }) {
     <div className="min-h-screen bg-black flex flex-col items-center justify-center px-4">
 
       <div className="mb-10 text-center">
-        <p className="font-jetbrains text-2xl font-bold tracking-[0.3em] gradient-text mb-2">ARKA</p>
-        <p className="text-muted text-sm">Connect to your Arka server to continue</p>
+        <p className="font-jetbrains text-2xl font-bold tracking-[0.3em] gradient-text mb-2">ARCA</p>
+        <p className="text-muted text-sm">Connect to your Arca server to continue</p>
       </div>
 
       <div className="w-full max-w-sm">
@@ -44,7 +44,7 @@ export default function ConnectionGate({ onConnect }) {
 
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-1.5">
-              Arka Server Address
+              Arca Server Address
             </label>
             <input
               type="url"
@@ -59,7 +59,7 @@ export default function ConnectionGate({ onConnect }) {
               <span className="font-jetbrains text-data">arp -a</span> on your local network,
               or use{' '}
               <span className="font-jetbrains text-data">http://localhost:8000</span>{' '}
-              if Arka is on the same device.
+              if Arca is on the same device.
             </p>
           </div>
 
@@ -87,7 +87,7 @@ export default function ConnectionGate({ onConnect }) {
         <p className="text-center text-[10px] text-muted mt-5 leading-relaxed">
           On a Mac, Windows, or Linux computer?{' '}
           Download the{' '}
-          <span className="text-cream font-semibold">Arka desktop app</span>{' '}
+          <span className="text-cream font-semibold">Arca desktop app</span>{' '}
           for automatic connection without this step.
         </p>
       </div>

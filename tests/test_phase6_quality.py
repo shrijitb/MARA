@@ -13,7 +13,7 @@ QUAL-05  feature_pipeline._safe_last_close raises ValueError for implausible pri
          yfinance version is pinned
 
 Run:
-    ~/arka/.venv/bin/python -m pytest tests/test_phase6_quality.py -v
+    ~/arca/.venv/bin/python -m pytest tests/test_phase6_quality.py -v
 """
 from __future__ import annotations
 

@@ -19,7 +19,7 @@ Paper mode (default):
   ArbitrageEngine skips NT startup if credentials are absent; the internal
   paper arb simulator fires synthetic spread signals for testing.
 
-REST contract (full Arka standard):
+REST contract (full Arca standard):
     GET  /health
     GET  /status     pnl, sharpe, allocated_usd, open_positions
     GET  /metrics    Prometheus text (plain/text, not JSON)
@@ -334,7 +334,7 @@ async def _run_nt_engine() -> None:
     # ── Boot TradingNode ──────────────────────────────────────────────────────
     try:
         config = TradingNodeConfig(
-            trader_id="ARKA-ARB-001",
+            trader_id="ARCA-ARB-001",
             data_engine=LiveDataEngineConfig(qsize=10_000),
             exec_engine=LiveExecEngineConfig(qsize=10_000),
             data_clients={
@@ -505,7 +505,7 @@ def resume():
 def metrics():
     active  = 0 if state.paused else 1
     content = (
-        f'arka_worker_active{{worker="{WORKER_NAME}"}} {active}\n'
+        f'arca_worker_active{{worker="{WORKER_NAME}"}} {active}\n'
         f'mara_arbitrader_pnl_usd {state.realised_pnl:.4f}\n'
         f'mara_arbitrader_open_positions {state.open_positions}\n'
         f'mara_arbitrader_trade_count {state.trade_count}\n'

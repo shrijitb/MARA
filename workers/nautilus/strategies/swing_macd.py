@@ -4,7 +4,7 @@ workers/nautilus/strategies/swing_macd.py
 MACD + Williams Fractals swing strategy — dual implementation.
 
 1. SwingMACDStrategy (NautilusTrader Strategy subclass)
-   Runs inside ArkaEngine (engine.py) when nautilus_trader is installed and
+   Runs inside ArcaEngine (engine.py) when nautilus_trader is installed and
    OKX credentials are present.  Handles bracket orders, position tracking,
    and risk checks via NautilusTrader's built-in risk engine.
 

@@ -73,7 +73,7 @@ def fetch_gdelt_articles(
         try:
             req = urllib.request.Request(
                 url,
-                headers={"User-Agent": "Arka-OSINT/2.0"},
+                headers={"User-Agent": "Arca-OSINT/2.0"},
             )
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read())

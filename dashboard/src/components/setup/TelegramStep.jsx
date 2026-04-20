@@ -60,7 +60,7 @@ export default function TelegramStep({ onNext, onBack, onSave }) {
           <p className="text-xs text-muted mb-2.5">
             Free push via <a href="https://ntfy.sh" target="_blank" rel="noopener noreferrer" className="text-warn/80 hover:text-warn">ntfy.sh</a> — iOS and Android, no account needed.
           </p>
-          <Field label="ntfy Topic" placeholder="e.g. my-arka-alerts-abc123 (choose anything unique)" type="text" value={ntfy} onChange={setNtfy} />
+          <Field label="ntfy Topic" placeholder="e.g. my-arca-alerts-abc123 (choose anything unique)" type="text" value={ntfy} onChange={setNtfy} />
         </div>
       </div>
 

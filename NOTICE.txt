@@ -1,5 +1,5 @@
 ================================================================================
-Arka — Regime-Aware Capital Orchestrator
+Arca — Regime-Aware Capital Orchestrator
 Copyright 2025-2026 Shrijit
 
 THIRD-PARTY LICENSE NOTICES
@@ -102,18 +102,18 @@ All Python dependencies are compatible with LGPL-3.0.
 LGPL-3.0 COMPLIANCE STATEMENT
 ================================================================================
 
-Arka is distributed under LGPL-3.0 due to its use of NautilusTrader
+Arca is distributed under LGPL-3.0 due to its use of NautilusTrader
 (also LGPL-3.0).
 
 Key obligations:
-  1. Source code availability: The source code of Arka and any modifications
+  1. Source code availability: The source code of Arca and any modifications
      to NautilusTrader must be available to recipients.
 
   2. License compatibility: Recipients may redistribute under LGPL-3.0 terms.
 
-  3. No restrictions on use: You may use Arka commercially or privately.
+  3. No restrictions on use: You may use Arca commercially or privately.
 
-  4. Modification rights: You may modify Arka and NautilusTrader for your needs.
+  4. Modification rights: You may modify Arca and NautilusTrader for your needs.
 
 For detailed terms, see:
   - LICENSE file in this repository
@@ -135,7 +135,7 @@ NO LICENSE CONFLICTS detected.
 DISTRIBUTION NOTES
 ================================================================================
 
-For Hardware Distribution (Raspberry Pi with Arka preloaded):
+For Hardware Distribution (Raspberry Pi with Arca preloaded):
 
   1. Include LICENSE and NOTICE.txt files with the hardware.
 
@@ -152,7 +152,7 @@ For Hardware Distribution (Raspberry Pi with Arka preloaded):
   5. Include build/compilation instructions if distributing compiled binaries.
 
 LGPL-3.0 explicitly permits commercial distribution of hardware+software.
-You may sell Raspberry Pi devices with Arka preloaded.
+You may sell Raspberry Pi devices with Arca preloaded.
 
 ================================================================================
 ATTRIBUTION
@@ -160,7 +160,7 @@ ATTRIBUTION
 
 For user-facing attribution, you may use:
 
-  "Arka is powered by NautilusTrader, an enterprise-grade trading engine
+  "Arca is powered by NautilusTrader, an enterprise-grade trading engine
    licensed under LGPL-3.0. For more information, visit:
    https://github.com/nautechsystems/nautilus_trader"
 

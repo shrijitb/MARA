@@ -1,4 +1,4 @@
-# LGPL-3.0 Compliance Guide for MARA
+# LGPL-3.0 Compliance Guide for ARCA
 
 **License**: GNU Lesser General Public License v3.0
 
@@ -6,9 +6,9 @@
 
 ## What You Can Do
 
-✅ **Sell MARA** — Commercial use is permitted  
-✅ **Sell Pi devices with MARA** — Hardware + software sales are permitted  
-✅ **Modify MARA** — You can change the code  
+✅ **Sell ARCA** — Commercial use is permitted  
+✅ **Sell Pi devices with ARCA** — Hardware + software sales are permitted  
+✅ **Modify ARCA** — You can change the code  
 ✅ **Modify NautilusTrader** — You can modify the trading engine  
 ✅ **Keep modifications private** — You don't have to publish your changes  
 ✅ **Use for trading** — No restrictions on profit or trading volume  
@@ -20,10 +20,10 @@
 
 ### 1. Include License Files
 
-When you distribute MARA (via GitHub, hardware, or website), include:
+When you distribute ARCA (via GitHub, hardware, or website), include:
 
 ```
-MARA/
+ARCA/
 ├── LICENSE                    ← LGPL-3.0 full text
 ├── NOTICE.txt                 ← This file (all attributions)
 └── README.md                  ← Mentions LGPL-3.0
@@ -32,7 +32,7 @@ MARA/
 ### 2. Provide Source Code Access
 
 Users have the right to access the source code of:
-- MARA hypervisor and workers
+- ARCA hypervisor and workers
 - Any modifications you made to NautilusTrader
 - All LGPL-3.0 components
 
@@ -57,7 +57,7 @@ If you distribute compiled Docker images or binaries:
 
 ### 5. Use Compatible Licenses
 
-Any code you add to MARA must use a license compatible with LGPL-3.0:
+Any code you add to ARCA must use a license compatible with LGPL-3.0:
 
 | License | Compatible? | Allowed? |
 |---------|-------------|----------|
@@ -87,7 +87,7 @@ If you distribute unmodified code from other projects, keep their copyright head
 ### Sample Product Description
 
 ```
-MARA Autonomous Trading System
+ARCA Autonomous Trading System
 • Powered by NautilusTrader (LGPL-3.0)
 • Source code available: https://github.com/[your-org]/mara
 • Licensed under LGPL-3.0 — See LICENSE file on SD card
@@ -110,7 +110,7 @@ and redistribute under the same terms.
 
 ## FAQs
 
-### Q: Can I sell MARA as a product?
+### Q: Can I sell ARCA as a product?
 **A:** Yes. LGPL-3.0 permits commercial use and sale.
 
 ### Q: Can I charge for support/updates?
@@ -122,14 +122,14 @@ and redistribute under the same terms.
 ### Q: Can I add proprietary code on top?
 **A:** Yes. Your proprietary code can coexist with LGPL-3.0 code, as long as the LGPL components remain under LGPL-3.0.
 
-### Q: What if a customer modifies MARA?
-**A:** They have the right to. They can modify NautilusTrader or MARA. They don't have to share it with you, but if they distribute it, they must share it with their customers.
+### Q: What if a customer modifies ARCA?
+**A:** They have the right to. They can modify NautilusTrader or ARCA. They don't have to share it with you, but if they distribute it, they must share it with their customers.
 
 ### Q: Can I relicense to Apache 2.0?
 **A:** No. You can't change NautilusTrader's license (that's Nautech's decision). But your new code can be Apache 2.0 (as long as LGPL-3.0 components remain LGPL-3.0).
 
 ### Q: What if I replace NautilusTrader later?
-**A:** If you use a different trading engine (your own or licensed), you can relicense MARA to whatever you want (Apache 2.0, proprietary, etc.). NautilusTrader will no longer be a dependency.
+**A:** If you use a different trading engine (your own or licensed), you can relicense ARCA to whatever you want (Apache 2.0, proprietary, etc.). NautilusTrader will no longer be a dependency.
 
 ---
 
@@ -146,10 +146,10 @@ and redistribute under the same terms.
 **LGPL-3.0 is permissive for your hardware+software business model.**
 
 You can:
-1. Sell Pi devices with MARA preloaded
+1. Sell Pi devices with ARCA preloaded
 2. Charge for hardware, support, customization
 3. Keep your business logic proprietary
-4. Modify MARA and NautilusTrader for your needs
+4. Modify ARCA and NautilusTrader for your needs
 
 You just need to:
 1. Include LICENSE and NOTICE files

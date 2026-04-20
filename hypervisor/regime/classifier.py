@@ -1,5 +1,5 @@
 """
-MARA Regime Classifier — hypervisor/regime/classifier.py
+ARCA Regime Classifier — hypervisor/regime/classifier.py
 
 4-state Gaussian HMM-based regime classifier.  Replaces the legacy priority-
 ordered threshold rule engine with a probabilistic framework.
@@ -265,7 +265,7 @@ class RegimeClassifier:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     print("\n" + "=" * 60)
-    print("MARA REGIME CLASSIFIER — LIVE TEST (HMM)")
+    print("ARCA REGIME CLASSIFIER — LIVE TEST (HMM)")
     print("=" * 60)
 
     clf    = RegimeClassifier()

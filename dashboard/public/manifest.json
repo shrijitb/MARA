@@ -1,6 +1,6 @@
 {
-  "name": "Arka",
-  "short_name": "Arka",
+  "name": "Arca",
+  "short_name": "Arca",
   "description": "Regime-aware multi-agent trading dashboard",
   "start_url": "/",
   "display": "standalone",
