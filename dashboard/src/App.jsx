@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useArcaData } from './hooks/useArcaData.js';
 import LoadingScreen    from './components/LoadingScreen.jsx';
 import ConnectionGate   from './components/ConnectionGate.jsx';
@@ -14,10 +14,32 @@ function storedUrl() {
   catch { return null; }
 }
 
+// True when the page is served from the same host as the hypervisor (nginx proxy
+// on port 3000 → hypervisor:8000), including VPS public IPs and localhost.
+async function probeSameOrigin() {
+  try {
+    const r = await fetch('/api/health', { signal: AbortSignal.timeout(4000) });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
 export default function App() {
-  // Electron always has a URL (defaults to localhost:8000 via electron-store).
-  // Web / Capacitor need the user to enter it once; we persist it in localStorage.
+  // Electron always has a URL; stored URL means user already configured it.
+  // Otherwise probe same-origin first so VPS / nginx setups skip ConnectionGate.
   const [connected, setConnected] = useState(() => isElectron() || Boolean(storedUrl()));
+
+  useEffect(() => {
+    if (connected) return;
+    probeSameOrigin().then(ok => {
+      if (ok) {
+        // Same-origin proxy works — use relative paths, no URL needed.
+        localStorage.setItem('arca_hypervisor_url', '');
+        setConnected(true);
+      }
+    });
+  }, []);
 
   const { data, setupStatus, setupComplete, refresh } = useArcaData();
 

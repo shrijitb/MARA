@@ -8,7 +8,11 @@ import { cn } from '../utils/cn.js';
  * Not shown in Electron — the desktop app stores the URL automatically.
  */
 export default function ConnectionGate({ onConnect }) {
-  const [url,     setUrl]     = useState('http://192.168.1.');
+  const [url,     setUrl]     = useState(() => {
+    const h = window.location.hostname;
+    const isLan = h === 'localhost' || h === '127.0.0.1' || h.startsWith('192.168.') || h.startsWith('10.') || h.startsWith('172.');
+    return isLan ? 'http://192.168.1.' : `${window.location.protocol}//${h}:8000`;
+  });
   const [testing, setTesting] = useState(false);
   const [error,   setError]   = useState(null);
 
@@ -55,11 +59,11 @@ export default function ConnectionGate({ onConnect }) {
               onKeyDown={e => e.key === 'Enter' && !testing && connect()}
             />
             <p className="text-[10px] text-muted mt-2 leading-relaxed">
-              Find your server IP with{' '}
-              <span className="font-jetbrains text-data">arp -a</span> on your local network,
-              or use{' '}
-              <span className="font-jetbrains text-data">http://localhost:8000</span>{' '}
-              if Arca is on the same device.
+              Local network: find your Pi IP with{' '}
+              <span className="font-jetbrains text-data">arp -a</span>.{' '}
+              VPS / cloud: use your server's public IP or hostname.{' '}
+              Same device:{' '}
+              <span className="font-jetbrains text-data">http://localhost:8000</span>.
             </p>
           </div>
 
